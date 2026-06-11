@@ -109,43 +109,18 @@ class OverlayAgent:
 
             # Step 2: Generate .ass subtitle file
             _progress(75, "📝 Gerando legendas traduzidas (.ass)...")
+            # Os segmentos de tradução JÁ estão na linha do tempo do áudio
+            # final: o agente de voz transcreve o merged_audio.wav (silêncios
+            # removidos) com AssemblyAI e sobrescreve translation.segments.
+            # NÃO converter/escalar estes tempos — são a fonte da verdade.
             translation_segments = voice.get("translation", {}).get("segments", [])
-
-            # ── Sincroniza com o áudio TTS (silêncios já removidos) ─────
-            # O vídeo final corta os intervalos entre falas e acelera cada
-            # segmento; a legenda precisa seguir essa MESMA linha do tempo
-            # de saída (= linha do tempo do áudio TTS), senão desvia.
-            _tts_info = voice.get("tts", {}) or {}
-            _seg_speeds = _tts_info.get("segment_speeds", []) or []
-            _gspd = float(_tts_info.get("speed_factor", 1.0) or 1.0)
-
-            def _to_output_timeline(segs):
-                try:
-                    if _seg_speeds and len(_seg_speeds) > 1:
-                        aligned = len(_seg_speeds) == len(segs)
-                        out, t = [], 0.0
-                        for i, sg in enumerate(segs):
-                            if aligned:
-                                sp = _seg_speeds[i]
-                                dur = max(0.0, float(sp["end"]) - float(sp["start"])) * float(sp.get("speed_factor", 1.0))
-                            else:
-                                dur = max(0.0, float(sg["end"]) - float(sg["start"])) * _gspd
-                            ns = dict(sg)
-                            ns["start"], ns["end"] = round(t, 3), round(t + dur, 3)
-                            out.append(ns)
-                            t += dur
-                        return out
-                    if _gspd != 1.0:
-                        return [
-                            {**sg, "start": round(float(sg["start"]) * _gspd, 3),
-                                   "end": round(float(sg["end"]) * _gspd, 3)}
-                            for sg in segs
-                        ]
-                    return segs
-                except Exception:
-                    return segs
-
-            translation_segments = _to_output_timeline(translation_segments)
+            if translation_segments:
+                logger.info(
+                    "overlay.subtitle_timeline",
+                    segments=len(translation_segments),
+                    first_start=translation_segments[0].get("start"),
+                    last_end=translation_segments[-1].get("end"),
+                )
 
             ass_path = overlay_dir / "subtitles.ass"
 

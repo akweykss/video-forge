@@ -241,7 +241,7 @@ class VoiceAgent:
                 try:
                     subtitle_segments = await self._transcribe_for_subtitles(
                         audio_path=str(merged_audio),
-                        language="pt",
+                        language=manifest.target_language or "pt",
                     )
                     logger.info(
                         "voice.subtitles_from_transcription",
@@ -251,10 +251,14 @@ class VoiceAgent:
                     )
                 except Exception as sub_err:
                     # Fallback: proportional distribution if transcription fails
-                    logger.warning(
+                    # ATENÇÃO: este caminho gera legendas APROXIMADAS (desvio
+                    # acumulativo) — o sync perfeito depende do AssemblyAI.
+                    logger.error(
                         "voice.subtitle_transcription_failed_fallback",
                         error=str(sub_err),
+                        msg="LEGENDAS APROXIMADAS — sync degradado",
                     )
+                    _progress(68, "⚠️ Transcrição falhou — legendas aproximadas (sync degradado)")
                     raw_sub_segments = [{
                         "start": 0.0,
                         "end": total_audio_duration,
@@ -507,6 +511,8 @@ class VoiceAgent:
             "it-IT": "it", "it": "it",
             "ja-JP": "ja", "ja": "ja",
             "ko-KR": "ko", "ko": "ko",
+            "hi-IN": "hi", "hi": "hi",
+            "ru-RU": "ru", "ru": "ru",
         }
         aai_lang = lang_map.get(language, "pt")
 
