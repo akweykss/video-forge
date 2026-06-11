@@ -59,6 +59,15 @@ class LipSyncAgent:
         """
         from dreamapi import DreamAPI, VideoParam
 
+        # O SDK finaliza o upload (policy_upload_finish) com timeout de só
+        # 10s — uploads maiores estouram esse limite de forma intermitente.
+        try:
+            from dreamapi.utils import file_uploader as _fu
+            if getattr(_fu, "DEFAULT_TIMEOUT", 10) < 120:
+                _fu.DEFAULT_TIMEOUT = 120
+        except Exception:
+            pass
+
         # Prepare output directory
         lipsync_dir = self.workspace / "lipsync" / job_id
         lipsync_dir.mkdir(parents=True, exist_ok=True)
@@ -94,13 +103,25 @@ class LipSyncAgent:
             if progress_callback:
                 progress_callback("lipsync", 20, "Enviando vídeo e áudio para DreamFace...")
 
-            task_id = await loop.run_in_executor(
-                None,
-                api.talking_face_from_file,
-                str(avatar_video_path),
-                str(audio_path),
-                video_param,
-            )
+            task_id = None
+            for _attempt in (1, 2, 3):
+                try:
+                    task_id = await loop.run_in_executor(
+                        None,
+                        api.talking_face_from_file,
+                        str(avatar_video_path),
+                        str(audio_path),
+                        video_param,
+                    )
+                    break
+                except Exception as _up_err:
+                    logger.warning(
+                        "lipsync.upload_retry",
+                        job_id=job_id, attempt=_attempt, error=str(_up_err),
+                    )
+                    if _attempt == 3:
+                        raise
+                    await asyncio.sleep(4 * _attempt)
 
             if not task_id:
                 logger.error("lipsync.no_task_id", job_id=job_id)

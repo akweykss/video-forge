@@ -382,6 +382,15 @@ body{
             </div>
           </div>
 
+          <div class="field">
+            <label data-i18n="lbl_subanim">Animação da legenda</label>
+            <div class="seg" id="subAnim" style="width:100%;display:flex">
+              <button type="button" class="active" style="flex:1" data-sa="frases" onclick="pickSubAnim('frases')" data-i18n="sa_frases">Frases inteiras</button>
+              <button type="button" style="flex:1" data-sa="palavras" onclick="pickSubAnim('palavras')" data-i18n="sa_palavras">Palavra por palavra</button>
+            </div>
+            <div class="hint" id="subAnimHint" data-i18n="sa_hint">Frases: até 2 linhas por vez · Palavra por palavra: ritmo TikTok, grupos de 2-3 palavras</div>
+          </div>
+
           <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div>
               <div style="font-weight:600;font-size:12.5px" data-i18n="wm_title">Limpar marca d'água e textos</div>
@@ -698,6 +707,11 @@ LANGS.pt.ss_cinema = 'Amarela cinema';         LANGS.en.ss_cinema = 'Cinema yell
 LANGS.pt.ss_classica = 'Branca clássica';      LANGS.en.ss_classica = 'Classic white';
 LANGS.pt.ss_limpa = 'Branca limpa';            LANGS.en.ss_limpa = 'Clean white';
 LANGS.pt.ss_dourada = 'Dourada';               LANGS.en.ss_dourada = 'Golden';
+LANGS.pt.lbl_subanim = 'Animação da legenda';  LANGS.en.lbl_subanim = 'Subtitle animation';
+LANGS.pt.sa_frases = 'Frases inteiras';        LANGS.en.sa_frases = 'Full phrases';
+LANGS.pt.sa_palavras = 'Palavra por palavra';  LANGS.en.sa_palavras = 'Word by word';
+LANGS.pt.sa_hint = 'Frases: até 2 linhas por vez · Palavra por palavra: ritmo TikTok, grupos de 2-3 palavras';
+LANGS.en.sa_hint = 'Phrases: up to 2 lines at a time · Word by word: TikTok pace, 2-3 word groups';
 
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
@@ -968,6 +982,12 @@ function pickSubStyle(s){
   try{ localStorage.setItem('fold-substyle', s); }catch(e){}
   document.querySelectorAll('#subStyles .substyle').forEach(b=>b.classList.toggle('selected', b.dataset.ss===s));
 }
+let subAnim = (()=>{ try{ return localStorage.getItem('fold-subanim') || 'frases'; }catch(e){ return 'frases'; } })();
+function pickSubAnim(a){
+  subAnim = a;
+  try{ localStorage.setItem('fold-subanim', a); }catch(e){}
+  document.querySelectorAll('#subAnim button').forEach(b=>b.classList.toggle('active', b.dataset.sa===a));
+}
 
 /* ---------- fila (API) ---------- */
 const PHASES_ALL = {pt:['Captura','Limpeza','Narração','Legendas','Master'], en:['Capture','Cleanup','Voiceover','Subtitles','Master']};
@@ -1233,6 +1253,7 @@ async function produce(){
     lut_intensity: parseInt($('lutSlider').value),
     remove_watermark: $('wmToggle').classList.contains('on'),
     subtitle_style: subStyle,
+    subtitle_animation: subAnim,
   };
   if(selectedChar) meta.character_id = selectedChar;
   const body = {
@@ -1352,6 +1373,7 @@ try{
 }catch(e){}
 const uiSel = $('uiLang'); if(uiSel) uiSel.value = LNG;
 pickSubStyle(subStyle);
+pickSubAnim(subAnim);
 applyStatic();
 renderVoiceSelect();
 renderVoices();

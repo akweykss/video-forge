@@ -55,7 +55,7 @@ LAYOUT_ORDER = ["top_bottom", "bottom_top", "center_blur"]
 # The user can tweak these numbers to fine-tune positioning.
 SUBTITLE_CONFIG = {
     # ── Style (matching original cinema ASS subtitles) ──
-    "font_size": 52,
+    "font_size": 48,
     "font_color": "yellow",        # Cinema standard yellow
     "font_bold": True,
     "border_width": 4,             # Black outline thickness

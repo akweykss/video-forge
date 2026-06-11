@@ -97,6 +97,7 @@ class SynthesisAgent:
                 except Exception:
                     _job_meta = {}
             _sub_style = str(_job_meta.get("subtitle_style") or "cinema")
+            _sub_anim = str(_job_meta.get("subtitle_animation") or "frases")
 
             if manifest._data.get("watermark_removed") or _job_meta.get("remove_watermark"):
                 sub_blur_region = None
@@ -169,6 +170,31 @@ class SynthesisAgent:
                     avatar_filename = char_meta.get("avatar_filename", "")
                     avatar_file = char_dir / avatar_filename
                     if avatar_file.exists():
+                        # Compacta o avatar 1x (~720p, sem áudio) — upload ao
+                        # DreamFace fica ~5x menor e estável
+                        try:
+                            _compact = avatar_file.with_name(avatar_file.stem + "_720.mp4")
+                            if not _compact.exists():
+                                _ccmd = [
+                                    str(self.ffmpeg.ffmpeg), "-y", "-i", str(avatar_file),
+                                    "-vf", "scale=-2:'min(720,ih)'",
+                                    "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                                    "-an", str(_compact),
+                                ]
+                                _cproc = await asyncio.create_subprocess_exec(
+                                    *_ccmd,
+                                    stdout=asyncio.subprocess.DEVNULL,
+                                    stderr=asyncio.subprocess.DEVNULL,
+                                )
+                                await _cproc.communicate()
+                            if _compact.exists() and _compact.stat().st_size > 0:
+                                avatar_file = _compact
+                                logger.info(
+                                    "synthesis.avatar_compacted",
+                                    size_mb=round(_compact.stat().st_size / 1048576, 1),
+                                )
+                        except Exception as _cerr:
+                            logger.warning("synthesis.avatar_compact_failed", error=str(_cerr))
                         lipsync_agent = LipSyncAgent(
                             workspace_dir=self.workspace_dir,
                             dreamface_api_key=dreamface_key,
@@ -232,6 +258,7 @@ class SynthesisAgent:
                 work_dir=work_dir,
                 progress_callback=_synth_progress,
                 segment_speeds=segment_speeds,
+                vertical_canvas=_burn_subs_now,  # sem avatar → master sempre 9:16
             )
 
             # ── Collect subtitle segments from voice phase ─────────────
@@ -286,6 +313,35 @@ class SynthesisAgent:
                         t += cd
                 sub_segments = final_segments
 
+                # Animação "palavra por palavra": grupos de 2-3 palavras com
+                # tempo proporcional dentro de cada fala
+                if str(_sub_anim).lower() in ("palavras", "palavra", "tiktok", "word", "words"):
+                    _grouped = []
+                    for seg in sub_segments:
+                        _ws = seg["text"].split()
+                        if not _ws:
+                            continue
+                        _gs, _cur = [], []
+                        for _w in _ws:
+                            _cur.append(_w)
+                            if len(_cur) >= 3 or (sum(len(x) for x in _cur) + len(_cur) - 1) >= 16:
+                                _gs.append(" ".join(_cur))
+                                _cur = []
+                        if _cur:
+                            _gs.append(" ".join(_cur))
+                        _total = sum(len(g) for g in _gs) or 1
+                        _t = seg["start"]
+                        _dur = seg["end"] - seg["start"]
+                        for _g in _gs:
+                            _d = _dur * (len(_g) / _total)
+                            _grouped.append({
+                                "start": round(_t, 3),
+                                "end": round(_t + _d, 3),
+                                "text": _g,
+                            })
+                            _t += _d
+                    sub_segments = _grouped
+
                 # NOTE: speed_factor adjustment NOT needed here.
                 # The rendered video has audio synced — segment_speeds adjust
                 # the video to match audio duration. Subtitle timings from
@@ -309,9 +365,19 @@ class SynthesisAgent:
                 if not ass_subtitle_path or not Path(ass_subtitle_path).exists():
                     return src_path
                 burned = output_dir / f"translated_{job_id[:8]}_subs.mp4"
+                # o .ass é gerado no espaço do canvas 1080×1920 — converte
+                # para 9:16 (fundo desfocado) e queima a legenda por cima
+                _vf = (
+                    "[0:v]split=2[vc_bg][vc_fg];"
+                    "[vc_bg]scale=1080:1920:force_original_aspect_ratio=increase,"
+                    "crop=1080:1920,gblur=sigma=24[vc_bgb];"
+                    "[vc_fg]scale=1080:1920:force_original_aspect_ratio=decrease[vc_fgs];"
+                    "[vc_bgb][vc_fgs]overlay=(W-w)/2:(H-h)/2,"
+                    f"ass='{str(ass_subtitle_path)}'[vout]"
+                )
                 cmd = [
                     str(self.ffmpeg.ffmpeg), "-y", "-i", str(src_path),
-                    "-vf", f"ass='{str(ass_subtitle_path)}'",
+                    "-filter_complex", _vf, "-map", "[vout]", "-map", "0:a?",
                     "-c:v", "libx264", "-preset", "fast", "-crf", "19",
                     "-c:a", "copy", str(burned),
                 ]

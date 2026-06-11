@@ -85,6 +85,12 @@ class OverlayAgent:
                 except: _job_meta_ov = {}
             _skip_blur = bool(_job_meta_ov.get("remove_watermark"))
             _sub_style = str(_job_meta_ov.get("subtitle_style") or "cinema")
+            _sub_anim = str(_job_meta_ov.get("subtitle_animation") or "frases")
+
+            # Canvas final é sempre 9:16 — legendas geradas no espaço do canvas
+            CANVAS_W, CANVAS_H = 1080, 1920
+            _scale = min(CANVAS_W / width, CANVAS_H / height)
+            _off_y = (CANVAS_H - height * _scale) / 2
 
             # Step 1: Calculate subtitle blur region from OCR
             if _skip_blur:
@@ -109,19 +115,24 @@ class OverlayAgent:
 
             if _skip_blur:
                 # Watermark removed — no blur region. Place subtitle slightly
-                # below the vertical center (~58% from top for portrait video).
-                sub_y = int(height * 0.58)
-                sub_h = int(height * 0.12)  # ~12% height band
+                # below the vertical center of the 9:16 canvas.
+                sub_y = int(CANVAS_H * 0.58)
+                sub_h = int(CANVAS_H * 0.12)  # ~12% height band
             else:
-                sub_y = sub_blur_region.get("y", int(height * 0.85)) if sub_blur_region else int(height * 0.85)
-                sub_h = sub_blur_region.get("h", height - sub_y) if sub_blur_region else (height - sub_y)
+                # Região do blur em coordenadas do vídeo original → remapeia
+                # para o canvas 9:16 (vídeo centralizado com fundo desfocado)
+                _ry = sub_blur_region.get("y", int(height * 0.85)) if sub_blur_region else int(height * 0.85)
+                _rh = sub_blur_region.get("h", height - _ry) if sub_blur_region else (height - _ry)
+                sub_y = int(_off_y + _ry * _scale)
+                sub_h = max(1, int(_rh * _scale))
 
             self.ffmpeg.generate_ass_subtitles(
                 segments=translation_segments,
                 output_path=ass_path,
-                video_width=width,
-                video_height=height,
+                video_width=CANVAS_W,
+                video_height=CANVAS_H,
                 style=_sub_style,
+                animation=_sub_anim,
                 sub_blur_y=sub_y,
                 sub_blur_h=sub_h,
             )

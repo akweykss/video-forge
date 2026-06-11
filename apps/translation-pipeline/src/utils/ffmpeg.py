@@ -489,6 +489,7 @@ class FFmpegWrapper:
         video_width: int = 1920,
         video_height: int = 1080,
         style: str = "cinema",
+        animation: str = "frases",
         sub_blur_y: Optional[int] = None,
         sub_blur_h: Optional[int] = None,
     ) -> Path:
@@ -562,7 +563,11 @@ class FFmpegWrapper:
 
         # MarginV: distance from bottom edge of video
         # Position subtitles ON the blur region that covers Chinese text
-        font_size = 92
+        # Fonte proporcional à largura — nunca encosta nas bordas
+        font_size = max(40, int(video_width * 0.052))
+        margin_lr = int(video_width * 0.06)
+        avg_char_px = font_size * 0.55
+        max_line_chars = max(10, int((video_width - 2 * margin_lr) / avg_char_px))
         text_block_h = font_size * 2  # 2 lines of text
 
         if sub_blur_y and sub_blur_h:
@@ -615,7 +620,7 @@ class FFmpegWrapper:
             f"Style: Cinema,Arial,{font_size},{primary_color},&H000000FF,"
             f"{outline_color},{back_color},{bold},0,0,0,"
             f"100,100,1,0,{border_style},{outline_px},{shadow_px},"
-            f"2,30,30,{margin_v},1\n"
+            f"2,{margin_lr},{margin_lr},{margin_v},1\n"
             "\n"
             "[Events]\n"
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, "
@@ -631,6 +636,10 @@ class FFmpegWrapper:
             # With Alignment=2 (bottom-center), pos_y = bottom edge of text
             # Move down by 2x font_size so the text covers the Chinese text
             pos_y = sub_blur_y + font_size * 2
+            # Clamp: o texto nunca sai da área visível do canvas
+            _top_min = text_block_h + int(video_height * 0.03)
+            _bot_max = video_height - int(video_height * 0.035)
+            pos_y = max(_top_min, min(pos_y, _bot_max))
             use_pos = True
             logger.info(
                 "ffmpeg.subtitle_position",
@@ -643,6 +652,23 @@ class FFmpegWrapper:
         else:
             use_pos = False
 
+        def _word_groups(text: str) -> list[str]:
+            """Grupos de 2-3 palavras para a animação estilo TikTok."""
+            words = text.split()
+            groups: list[str] = []
+            cur: list[str] = []
+            for w in words:
+                cur.append(w)
+                if len(cur) >= 3 or (sum(len(x) for x in cur) + len(cur) - 1) >= 16:
+                    groups.append(" ".join(cur))
+                    cur = []
+            if cur:
+                groups.append(" ".join(cur))
+            return groups
+
+        _anim_words = str(animation).lower() in ("palavras", "palavra", "tiktok", "word", "words")
+        _ptag = f"{{\\pos({pos_x},{pos_y})}}" if use_pos else ""
+
         lines: list[str] = [header]
         for seg in segments:
             start_tc = _secs_to_ass_timecode(float(seg["start"]))
@@ -652,8 +678,27 @@ class FFmpegWrapper:
             if not raw_text:
                 continue
 
-            # Apply line wrapping (max 22 chars/line, max 2 visual lines)
-            wrapped = _wrap_text(raw_text)
+            # Animação palavra por palavra: cada grupo de 2-3 palavras
+            # aparece no seu tempo, distribuído pela duração da fala
+            if _anim_words:
+                _s0 = float(seg["start"])
+                _s1 = float(seg["end"])
+                _groups = _word_groups(raw_text)
+                _total = sum(len(g) for g in _groups) or 1
+                _t = _s0
+                for _g in _groups:
+                    _d = (_s1 - _s0) * (len(_g) / _total)
+                    _tc0 = _secs_to_ass_timecode(_t)
+                    _tc1 = _secs_to_ass_timecode(min(_t + _d, _s1))
+                    lines.append(
+                        f"Dialogue: 0,{_tc0},{_tc1},Cinema,,0,0,0,,"
+                        f"{_ptag}{{\\fad(60,40)}}{_g}\n"
+                    )
+                    _t += _d
+                continue
+
+            # Apply line wrapping (max chars proporcionais, max 2 visual lines)
+            wrapped = _wrap_text(raw_text, max_line_chars)
 
             # Use \pos(x,y) for pixel-perfect placement on blur
             if use_pos:
@@ -696,6 +741,7 @@ class FFmpegWrapper:
         work_dir: Optional[str | Path] = None,
         progress_callback: Optional[callable] = None,
         segment_speeds: Optional[list[dict]] = None,
+        vertical_canvas: bool = False,
     ) -> Path:
         """Run the full synthesis pipeline in a SINGLE FFmpeg pass.
 
@@ -805,7 +851,7 @@ class FFmpegWrapper:
 
         # ── Build filter graph ────────────────────────────────────
         # Strategy: if blur is needed OR segment_speeds, we MUST use filter_complex
-        use_filter_complex = sub_blur_region is not None or (segment_speeds and len(segment_speeds) > 1)
+        use_filter_complex = sub_blur_region is not None or (segment_speeds and len(segment_speeds) > 1) or vertical_canvas
 
         if use_filter_complex:
             filter_graph = self._build_filter_complex(
@@ -817,6 +863,7 @@ class FFmpegWrapper:
                 apply_grain=apply_grain_flag,
                 grain_intensity=grain_intensity,
                 segment_speeds=segment_speeds,
+                vertical_canvas=vertical_canvas,
             )
             if safe_ass and has_subtitles_filter:
                 _subs_applied = True
@@ -945,6 +992,7 @@ class FFmpegWrapper:
         apply_grain: bool = True,
         grain_intensity: int = 8,
         segment_speeds: Optional[list[dict]] = None,
+        vertical_canvas: bool = False,
     ) -> str:
         """Build a filter_complex graph string with optional gblur per-segment sync.
 
@@ -1034,6 +1082,21 @@ class FFmpegWrapper:
         else:
             # No blur — pass through directly
             stage4_input = post_flip_input
+
+        # ── Stage 3.5: canvas vertical 9:16 (fundo desfocado do vídeo) ──
+        # Blur usa coordenadas do vídeo original (estágio 3); as legendas
+        # (.ass) já são geradas no espaço do canvas 1080×1920.
+        if vertical_canvas:
+            parts.append(f"{stage4_input}split=2[vc_bg][vc_fg]")
+            parts.append(
+                "[vc_bg]scale=1080:1920:force_original_aspect_ratio=increase,"
+                "crop=1080:1920,gblur=sigma=24[vc_bgb]"
+            )
+            parts.append(
+                "[vc_fg]scale=1080:1920:force_original_aspect_ratio=decrease[vc_fgs]"
+            )
+            parts.append("[vc_bgb][vc_fgs]overlay=(W-w)/2:(H-h)/2[vcanvas]")
+            stage4_input = "[vcanvas]"
 
         # ── Stage 4: post-processing (subtitles, LUT, grain) ───────────
         post_filters: list[str] = []
