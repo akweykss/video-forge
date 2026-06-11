@@ -16,15 +16,16 @@ interface SceneData {
   durationInFrames: number;
   durationInSeconds?: number;
   startFrame?: number;
-  headline?: string;
-  body?: string;
-  narrationText?: string;
+  headline?: string | null;
+  body?: string | null;
+  subtitle?: string | null;
+  narrationText?: string | null;
   animation?: string;
   transition?: string;
   transitionDurationFrames?: number;
   visualType?: string;
-  stockQuery?: string;
-  assetUrl?: string;
+  stockQuery?: string | null;
+  assetUrl?: string | null;
 }
 
 interface SceneInspectorProps {
