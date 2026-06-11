@@ -14,9 +14,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Optional
 
-import cv2
-import numpy as np
-import structlog
+# cv2 and numpy are imported lazily inside _extract_frames()
+# to avoid requiring libGL.so.1 at server startup.
 
 from ..db.models import Database, JobStatus
 from ..utils.manifest import JobManifest
@@ -170,6 +169,8 @@ class SpatialAgent:
 
         For a 2-min video this extracts 5 frames instead of 60+.
         """
+        import cv2  # noqa: PLC0415  # lazy import — avoids libGL at startup
+        import numpy as np  # noqa: PLC0415
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {video_path}")

@@ -1,13 +1,7 @@
 FROM python:3.12-slim
 
-# Instala as bibliotecas de sistema que o opencv/paddleocr precisam
+# Instala ffmpeg e dependências mínimas
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
     ffmpeg \
     wget \
     curl \
@@ -15,15 +9,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Instala dependências Python
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install opencv-python-headless==4.11.0.86 --force-reinstall
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o código
 COPY . .
 
-# Cria pasta de dados
 RUN mkdir -p data workspace/downloads workspace/overlays workspace/outputs
 
 EXPOSE 8000
