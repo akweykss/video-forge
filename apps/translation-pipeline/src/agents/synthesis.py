@@ -281,6 +281,7 @@ class SynthesisAgent:
                             "start": round(float(seg.get("start", 0)), 3),
                             "end": round(float(seg.get("end", 0)), 3),
                             "text": text,
+                            "words": seg.get("words") or [],
                         })
 
                 # Split long segments (max 34 chars — fits 1080px with Arial Bold)
@@ -322,6 +323,28 @@ class SynthesisAgent:
                 if str(_sub_anim).lower() in ("palavras", "palavra", "tiktok", "word", "words"):
                     _grouped = []
                     for seg in sub_segments:
+                        _segw = seg.get("words") or []
+                        if _segw:
+                            # Tempos REAIS por palavra — sync exato
+                            _wgs, _curw = [], []
+                            for _w in _segw:
+                                _curw.append(_w)
+                                if len(_curw) >= 3 or (sum(len(x["text"]) for x in _curw) + len(_curw) - 1) >= 16:
+                                    _wgs.append(_curw)
+                                    _curw = []
+                            if _curw:
+                                _wgs.append(_curw)
+                            for _gi, _gw in enumerate(_wgs):
+                                _g1 = float(_gw[-1]["end"])
+                                if _gi + 1 < len(_wgs):
+                                    _g1 = max(_g1, float(_wgs[_gi + 1][0]["start"]))
+                                _grouped.append({
+                                    "start": round(float(_gw[0]["start"]), 3),
+                                    "end": round(_g1, 3),
+                                    "text": " ".join(x["text"] for x in _gw),
+                                })
+                            continue
+                        # Fallback proporcional (sem tempos por palavra)
                         _ws = seg["text"].split()
                         if not _ws:
                             continue

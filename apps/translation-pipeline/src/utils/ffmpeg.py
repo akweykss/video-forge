@@ -681,6 +681,31 @@ class FFmpegWrapper:
             # Animação palavra por palavra: cada grupo de 2-3 palavras
             # aparece no seu tempo, distribuído pela duração da fala
             if _anim_words:
+                _seg_words = seg.get("words") or []
+                if _seg_words:
+                    # Tempos REAIS por palavra (AssemblyAI) — sync exato
+                    _wgroups, _curw = [], []
+                    for _w in _seg_words:
+                        _curw.append(_w)
+                        if len(_curw) >= 3 or (sum(len(x["text"]) for x in _curw) + len(_curw) - 1) >= 16:
+                            _wgroups.append(_curw)
+                            _curw = []
+                    if _curw:
+                        _wgroups.append(_curw)
+                    for _gi, _gw in enumerate(_wgroups):
+                        _g0 = float(_gw[0]["start"])
+                        _g1 = float(_gw[-1]["end"])
+                        if _gi + 1 < len(_wgroups):
+                            _g1 = max(_g1, float(_wgroups[_gi + 1][0]["start"]))
+                        _txt = " ".join(x["text"] for x in _gw)
+                        _tc0 = _secs_to_ass_timecode(_g0)
+                        _tc1 = _secs_to_ass_timecode(_g1)
+                        lines.append(
+                            f"Dialogue: 0,{_tc0},{_tc1},Cinema,,0,0,0,,"
+                            f"{_ptag}{{\\fad(50,30)}}{_txt}\n"
+                        )
+                    continue
+                # Fallback proporcional (sem tempos por palavra)
                 _s0 = float(seg["start"])
                 _s1 = float(seg["end"])
                 _groups = _word_groups(raw_text)

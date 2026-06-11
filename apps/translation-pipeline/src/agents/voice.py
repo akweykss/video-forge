@@ -269,6 +269,22 @@ class VoiceAgent:
                         raw_sub_segments, max_chars=70
                     )
 
+                # Suaviza a leitura: cola blocos próximos (sem piscar) e
+                # garante duração mínima de exibição — sem ultrapassar o
+                # início do bloco seguinte
+                for _si in range(len(subtitle_segments)):
+                    _sg = subtitle_segments[_si]
+                    _s = float(_sg["start"])
+                    _e = float(_sg["end"])
+                    _nxt = subtitle_segments[_si + 1]["start"] if _si + 1 < len(subtitle_segments) else None
+                    if _nxt is not None and _nxt > _s:
+                        if _nxt - _e < 0.3:
+                            _e = _nxt
+                        _e = min(max(_e, _s + 0.7), _nxt)
+                    else:
+                        _e = max(_e, _s + 0.7)
+                    _sg["end"] = round(_e, 3)
+
                 _progress(69, f"✅ {len(subtitle_segments)} legendas geradas")
 
                 synced_segments = subtitle_segments
@@ -527,27 +543,46 @@ class VoiceAgent:
             if transcript.status == aai.TranscriptStatus.error:
                 raise RuntimeError(f"AssemblyAI error: {transcript.error}")
 
-            # Build subtitle segments from sentences
+            # Blocos curtos estilo CapCut/TikTok, com tempo REAL por
+            # palavra (AssemblyAI fornece start/end de cada palavra).
+            # Quebra quando: bloco atinge ~22 chars, pausa > 0.6s, ou
+            # pontuação final — leitura confortável e sync exato.
             subtitle_segments = []
 
-            if transcript.sentences():
+            if transcript.words:
+                MAX_CHARS = 22
+                MAX_GAP = 0.6
+                cur: list[dict] = []
+                prev_end = None
+
+                def _flush():
+                    if not cur:
+                        return
+                    subtitle_segments.append({
+                        "start": round(cur[0]["start"], 3),
+                        "end": round(cur[-1]["end"], 3),
+                        "translated": " ".join(w["text"] for w in cur),
+                        "words": [dict(w) for w in cur],
+                    })
+                    cur.clear()
+
+                for w in transcript.words:
+                    ws, we = w.start / 1000.0, w.end / 1000.0
+                    if cur:
+                        chars = sum(len(x["text"]) for x in cur) + len(cur)
+                        gap = ws - prev_end if prev_end is not None else 0.0
+                        ends_sentence = cur[-1]["text"][-1:] in ".!?…"
+                        if chars + len(w.text) > MAX_CHARS or gap > MAX_GAP or ends_sentence:
+                            _flush()
+                    cur.append({"text": w.text, "start": ws, "end": we})
+                    prev_end = we
+                _flush()
+            elif transcript.sentences():
                 for sentence in transcript.sentences():
                     subtitle_segments.append({
                         "start": round(sentence.start / 1000.0, 3),
                         "end": round(sentence.end / 1000.0, 3),
                         "translated": sentence.text,
-                    })
-            elif transcript.words:
-                # Fallback: group words into ~5-7 word chunks
-                words = transcript.words
-                chunk_size = 6
-                for i in range(0, len(words), chunk_size):
-                    chunk = words[i:i+chunk_size]
-                    text = " ".join(w.text for w in chunk)
-                    subtitle_segments.append({
-                        "start": round(chunk[0].start / 1000.0, 3),
-                        "end": round(chunk[-1].end / 1000.0, 3),
-                        "translated": text,
                     })
             else:
                 # Last resort: single subtitle
