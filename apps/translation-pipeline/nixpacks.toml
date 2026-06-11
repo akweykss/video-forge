@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["libGL", "glib", "libglib"]
+nixPkgs = ["libGL", "glib"]
 
 [phases.install]
 cmds = [
