@@ -83,7 +83,9 @@ const upload = multer({
 // Express app
 // ============================================================
 
-const app: express.Express = express();
+import type { Application } from 'express';
+
+const app: Application = express();
 app.use(cors());
 app.use((req, res, next) => {
   const ct = req.headers['content-type'] || '';
