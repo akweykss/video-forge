@@ -135,6 +135,8 @@ h1{font-family:var(--serif);font-size:23px;font-weight:500}
 .job .thumb{width:42px;height:56px;border-radius:8px;background:var(--logbg);display:flex;align-items:center;justify-content:center;color:var(--faint)}
 .job-title{font-weight:600;font-size:13.5px;margin-bottom:2px}
 .job-meta{font-size:11.5px;color:var(--faint)}
+.job-meta .meta-link{color:var(--link);text-decoration:none}
+.job-meta .meta-link:hover{text-decoration:underline}
 .job-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:165px}
 .detail-wrap{margin-bottom:9px;border:1px solid var(--accent-line);border-radius:13px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow);position:relative}
 .detail-wrap .job{margin-bottom:0;border:none;background:none;box-shadow:none}
@@ -968,6 +970,7 @@ function normalize(raw){
     id: raw.id || raw.job_id,
     title: raw.original_title || raw.title || shortUrl(raw.source_url || raw.url) || 'Produção',
     url: shortUrl(raw.source_url || raw.url),
+    fullUrl: raw.source_url || raw.url || '',
     dur: raw.duration ? `${Math.floor(raw.duration/60)}:${String(Math.round(raw.duration%60)).padStart(2,'0')}` : '—',
     voice: voiceName(meta.voice_id),
     status: st, phase: Math.min(phase,4), prog,
@@ -1113,12 +1116,17 @@ function renderJobs(){
     return;
   }
   $('jobList').innerHTML = list.map(j=>{
+    const isOpen = expanded===j.id;
+    const metaUrl = (isOpen && j.fullUrl)
+      ? `<a class="meta-link" href="${esc(j.fullUrl)}" target="_blank" rel="noopener" title="${LNG==='en'?'Open original video':'Abrir vídeo original'}">${esc(j.url)}</a>`
+      : esc(j.url);
+    const metaLine = `<div class="job-meta"${isOpen?' onclick="event.stopPropagation()" style="cursor:default;width:max-content"':''}>${metaUrl} · <span class="tc">${j.dur}</span> · ${esc(j.voice)} · ${j.when}</div>`;
     const head = `
-      <div class="${expanded===j.id?'':'card '}job s-${j.status} ${j.status==='done'&&expanded!==j.id?'folded':''}" onclick="toggleJob('${j.id}')">
+      <div class="${isOpen?'':'card '}job s-${j.status} ${j.status==='done'&&!isOpen?'folded':''}" onclick="toggleJob('${j.id}')">
         <div class="thumb">${filmSvg}</div>
         <div>
           <div class="job-title">${esc(j.title)}</div>
-          <div class="job-meta">${esc(j.url)} · <span class="tc">${j.dur}</span> · ${esc(j.voice)} · ${j.when}</div>
+          ${metaLine}
         </div>
         <div class="job-right">${jobRight(j)}</div>
         <button class="res-btn" title="${t('resources')}" onclick="event.stopPropagation();openRes('${j.id}')">${layersSvg}</button>
