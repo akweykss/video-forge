@@ -284,7 +284,14 @@ async def run_pipeline(job_id: str, settings: Optional[ApproveJobRequest] = None
             try: _meta_for_ocr = _jm_ocr.loads(_job_for_ocr.metadata)
             except: _meta_for_ocr = {}
 
-        if _meta_for_ocr.get("remove_watermark"):
+        _wm_requested = bool(_meta_for_ocr.get("remove_watermark"))
+        _wm_removed_ok = bool(getattr(manifest, "_data", {}).get("watermark_removed"))
+        if _wm_requested and not _wm_removed_ok:
+            # Remoção pedida mas a API falhou → NÃO pula o OCR: cai no
+            # caminho do blur para o texto original não ficar exposto
+            logger.warning("pipeline.watermark_failed_fallback_blur", job_id=job_id)
+            _update_progress(job_id, "processing_ocr", 22, "⚠️ Remoção falhou — aplicando blur sobre o texto original...")
+        if _wm_requested and _wm_removed_ok:
             # ── SKIP OCR — watermark already removed by API ──────────
             _update_progress(job_id, "processing_ocr", 22, "⚡ Marca d'água removida — OCR não necessário!")
             logger.info("pipeline.skip_ocr_watermark_removed", job_id=job_id)

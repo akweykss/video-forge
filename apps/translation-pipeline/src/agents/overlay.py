@@ -83,7 +83,7 @@ class OverlayAgent:
             if isinstance(job.metadata, str):
                 try: _job_meta_ov = _jm_ov.loads(job.metadata)
                 except: _job_meta_ov = {}
-            _skip_blur = bool(_job_meta_ov.get("remove_watermark"))
+            _skip_blur = bool(manifest._data.get("watermark_removed"))
             _sub_style = str(_job_meta_ov.get("subtitle_style") or "cinema")
             _sub_anim = str(_job_meta_ov.get("subtitle_animation") or "frases")
 
@@ -95,7 +95,7 @@ class OverlayAgent:
             # Step 1: Calculate subtitle blur region from OCR
             if _skip_blur:
                 sub_blur_region = None
-                _progress(72, "⚡ Marca d'água removida — sem blur necessário!")
+                _progress(72, "⚡ Marca d'água removida pela API — sem blur necessário!")
                 logger.info("overlay.skip_blur", job_id=job_id, reason="remove_watermark")
             else:
                 _progress(72, "🔍 Calculando região de legendas originais...")
@@ -110,6 +110,42 @@ class OverlayAgent:
             # Step 2: Generate .ass subtitle file
             _progress(75, "📝 Gerando legendas traduzidas (.ass)...")
             translation_segments = voice.get("translation", {}).get("segments", [])
+
+            # ── Sincroniza com o áudio TTS (silêncios já removidos) ─────
+            # O vídeo final corta os intervalos entre falas e acelera cada
+            # segmento; a legenda precisa seguir essa MESMA linha do tempo
+            # de saída (= linha do tempo do áudio TTS), senão desvia.
+            _tts_info = voice.get("tts", {}) or {}
+            _seg_speeds = _tts_info.get("segment_speeds", []) or []
+            _gspd = float(_tts_info.get("speed_factor", 1.0) or 1.0)
+
+            def _to_output_timeline(segs):
+                try:
+                    if _seg_speeds and len(_seg_speeds) > 1:
+                        aligned = len(_seg_speeds) == len(segs)
+                        out, t = [], 0.0
+                        for i, sg in enumerate(segs):
+                            if aligned:
+                                sp = _seg_speeds[i]
+                                dur = max(0.0, float(sp["end"]) - float(sp["start"])) * float(sp.get("speed_factor", 1.0))
+                            else:
+                                dur = max(0.0, float(sg["end"]) - float(sg["start"])) * _gspd
+                            ns = dict(sg)
+                            ns["start"], ns["end"] = round(t, 3), round(t + dur, 3)
+                            out.append(ns)
+                            t += dur
+                        return out
+                    if _gspd != 1.0:
+                        return [
+                            {**sg, "start": round(float(sg["start"]) * _gspd, 3),
+                                   "end": round(float(sg["end"]) * _gspd, 3)}
+                            for sg in segs
+                        ]
+                    return segs
+                except Exception:
+                    return segs
+
+            translation_segments = _to_output_timeline(translation_segments)
 
             ass_path = overlay_dir / "subtitles.ass"
 

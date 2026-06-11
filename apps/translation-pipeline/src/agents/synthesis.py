@@ -100,7 +100,7 @@ class SynthesisAgent:
             _sub_style = str(_job_meta.get("subtitle_style") or "cinema")
             _sub_anim = str(_job_meta.get("subtitle_animation") or "frases")
 
-            if manifest._data.get("watermark_removed") or _job_meta.get("remove_watermark"):
+            if manifest._data.get("watermark_removed"):
                 sub_blur_region = None
                 logger.info(
                     "synthesis.skip_blur",
@@ -272,6 +272,32 @@ class SynthesisAgent:
                 if not voice_segments:
                     voice_segments = voice.get("transcription", {}).get("segments", [])
 
+                # Converte para a linha do tempo de SAÍDA (gaps removidos +
+                # velocidade por segmento) = linha do tempo do áudio TTS
+                _tts2 = voice.get("tts", {}) or {}
+                _spds2 = _tts2.get("segment_speeds", []) or []
+                _g2 = float(_tts2.get("speed_factor", 1.0) or 1.0)
+                if _spds2 and len(_spds2) > 1:
+                    _al2 = len(_spds2) == len(voice_segments)
+                    _o2, _t2 = [], 0.0
+                    for _i2, _sg2 in enumerate(voice_segments):
+                        if _al2:
+                            _sp2 = _spds2[_i2]
+                            _d2 = max(0.0, float(_sp2["end"]) - float(_sp2["start"])) * float(_sp2.get("speed_factor", 1.0))
+                        else:
+                            _d2 = max(0.0, float(_sg2["end"]) - float(_sg2["start"])) * _g2
+                        _n2 = dict(_sg2)
+                        _n2["start"], _n2["end"] = round(_t2, 3), round(_t2 + _d2, 3)
+                        _o2.append(_n2)
+                        _t2 += _d2
+                    voice_segments = _o2
+                elif _g2 != 1.0:
+                    voice_segments = [
+                        {**_sg2, "start": round(float(_sg2["start"]) * _g2, 3),
+                                 "end": round(float(_sg2["end"]) * _g2, 3)}
+                        for _sg2 in voice_segments
+                    ]
+
                 for seg in voice_segments:
                     text = seg.get("translated", seg.get("text", "")).strip()
                     if text:
@@ -344,10 +370,8 @@ class SynthesisAgent:
                             _t += _d
                     sub_segments = _grouped
 
-                # NOTE: speed_factor adjustment NOT needed here.
-                # The rendered video has audio synced — segment_speeds adjust
-                # the video to match audio duration. Subtitle timings from
-                # TTS are already in the correct output timeline.
+                # Tempos já convertidos acima para a linha do tempo de
+                # saída (idêntica à do áudio TTS pós-remoção de silêncio).
 
                 if sub_segments:
                     logger.info(

@@ -22,7 +22,7 @@ SUBMIT_URL = "https://api.newportai.com/api/async/video_watermark_remover"
 POLL_URL   = "https://api.newportai.com/api/getAsyncResult"  # ← correct endpoint per SDK
 
 POLL_INTERVAL_SECS   = 10
-MAX_POLL_TIMEOUT_SECS = 600  # 10 minutes
+MAX_POLL_TIMEOUT_SECS = 1500  # 25 min — vídeos longos demoram mais que 10min
 
 
 class WatermarkRemoverError(Exception):
@@ -269,8 +269,9 @@ class WatermarkRemover:
                     response=data,
                 )
 
+            # Status 0 = tarefa criada/aguardando — continua o polling
             # Any other unknown status
-            if status is not None and status not in (1, 2, 3, 4):
+            if status is not None and status not in (0, 1, 2, 3, 4):
                 raise WatermarkRemoverError(
                     f"Task unexpected status {status}: {data}",
                     response=data,
