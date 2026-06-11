@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoForge — Timeline Editor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0A0A12; --surface: #12121E; --surface2: #1A1A2E; --surface3: #22223A;
+      --border: rgba(255,255,255,0.08); --text: #E2E8F0; --text2: #94A3B8; --text3: #64748B;
+      --accent: #4F7BFF; --accent2: #8B5CF6; --red: #EF4444; --green: #10B981;
+      --yellow: #FACC15; --orange: #F59E0B; --cyan: #06B6D4; --pink: #EC4899;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* TOP BAR */
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .topbar h1 { font-size: 14px; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+    .topbar select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; max-width: 320px; }
+    .topbar .info { margin-left: auto; font-size: 11px; color: var(--text3); display: flex; gap: 14px; }
+    .topbar .info span { color: var(--text2); }
+    .btn { background: var(--accent); color: #fff; border: none; padding: 5px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn:hover { filter: brightness(1.2); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm { padding: 3px 8px; font-size: 10px; }
+
+    /* MAIN LAYOUT */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* SCENE LIST (LEFT) */
+    .scene-list { width: 260px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+    .scene-list-header { padding: 8px 12px; font-size: 11px; font-weight: 700; color: var(--text3); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.05em; }
+    .scene-card { padding: 8px 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.12s; }
+    .scene-card:hover { background: var(--surface2); }
+    .scene-card.active { background: rgba(79,123,255,0.1); border-left: 3px solid var(--accent); }
+    .scene-card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+    .scene-card .id { font-size: 11px; font-weight: 700; }
+    .scene-card .type { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--surface3); color: var(--text3); text-transform: uppercase; }
+    .scene-card .badges { display: flex; gap: 3px; flex-wrap: wrap; }
+    .scene-card .narr { font-size: 10px; color: var(--text3); margin-top: 3px; max-height: 28px; overflow: hidden; line-height: 1.3; }
+    .badge { font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 3px; }
+
+    /* CENTER: VIDEO + DETAIL */
+    .center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* VIDEO PLAYER */
+    .video-area { background: #000; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+    .video-area video { max-height: 100%; max-width: 100%; object-fit: contain; }
+    .video-area .no-video { color: var(--text3); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .video-controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 8px 14px; display: flex; align-items: center; gap: 10px; }
+    .video-controls .time { font-size: 11px; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .video-controls .seek-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; position: relative; }
+    .video-controls .seek-fill { height: 100%; background: var(--accent); border-radius: 2px; pointer-events: none; }
+    .video-controls button { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 2px 4px; }
+    .scene-marker { position: absolute; top: -2px; width: 1px; height: 8px; background: rgba(255,255,255,0.4); }
+
+    /* DETAIL PANEL */
+    .detail-panel { flex: 1; overflow-y: auto; padding: 14px; }
+    .detail-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .detail-section h3 { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .label { font-size: 11px; color: var(--text3); }
+    .detail-row .value { font-size: 12px; font-weight: 600; }
+    .detail-row select, .detail-row input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-family: 'Inter', sans-serif; }
+    .detail-row input[type="text"] { width: 180px; }
+    .text-preview { background: var(--surface2); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: var(--text2); line-height: 1.5; }
+    .text-preview em { color: var(--yellow); font-style: normal; font-weight: 700; background: rgba(250,204,21,0.15); padding: 0 2px; border-radius: 2px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* TIMELINE (BOTTOM) */
+    .timeline { background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; padding: 8px 12px 6px; }
+    .timeline-tracks { display: flex; flex-direction: column; gap: 2px; }
+    .timeline-track { display: flex; gap: 1px; height: 22px; align-items: stretch; }
+    .track-label { width: 70px; display: flex; align-items: center; font-size: 9px; color: var(--text3); font-weight: 600; flex-shrink: 0; }
+    .track-blocks { display: flex; gap: 1px; flex: 1; position: relative; }
+    .track-block { border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 600; color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.12s; overflow: hidden; white-space: nowrap; padding: 0 2px; }
+    .track-block:hover { filter: brightness(1.3); transform: scaleY(1.15); }
+    .track-block.active { outline: 2px solid #fff; outline-offset: -1px; z-index: 2; }
+    .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; border-radius: 1px; z-index: 10; pointer-events: none; box-shadow: 0 0 6px rgba(255,255,255,0.5); transition: left 0.1s linear; }
+    .legend { display: flex; gap: 10px; margin-top: 5px; justify-content: center; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--text3); }
+    .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <h1>⚡ VideoForge Editor</h1>
+  <select id="manifestSelect" onchange="loadManifest(this.value)">
+    <option value="">— Selecionar projeto —</option>
+  </select>
+  <select id="videoSelect" onchange="loadVideo(this.value)" style="max-width:200px">
+    <option value="">— Vídeo —</option>
+  </select>
+  <button class="btn-ghost btn" onclick="location.href='/'">← Voltar</button>
+  <button class="btn" id="saveBtn" onclick="saveManifest()" style="display:none">💾 Salvar</button>
+  <div class="info">
+    <div>Cenas: <span id="infoScenes">0</span></div>
+    <div>Duração: <span id="infoDuration">0s</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- SCENE LIST -->
+  <div class="scene-list">
+    <div class="scene-list-header"><span>📋 Cenas</span><span id="sceneCountLabel">0</span></div>
+    <div id="sceneListBody"></div>
+  </div>
+
+  <!-- CENTER: VIDEO + DETAILS -->
+  <div class="center">
+    <!-- VIDEO PLAYER -->
+    <div class="video-area" id="videoArea" style="height:340px">
+      <div class="no-video" id="noVideoMsg">
+        <span style="font-size:36px;opacity:0.3">🎬</span>
+        <span>Selecione um vídeo renderizado acima</span>
+      </div>
+      <video id="videoPlayer" style="display:none" onclick="togglePlay()"></video>
+      <div class="video-controls" id="videoControls" style="display:none">
+        <button onclick="togglePlay()" id="playBtn">▶</button>
+        <span class="time" id="timeDisplay">00:00 / 00:00</span>
+        <div class="seek-bar" id="seekBar" onclick="seek(event)">
+          <div class="seek-fill" id="seekFill" style="width:0%"></div>
+        </div>
+        <button onclick="skipFrames(-1)" title="← 1 frame" style="font-size:12px">⏪</button>
+        <button onclick="skipFrames(1)" title="→ 1 frame" style="font-size:12px">⏩</button>
+      </div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="detail-panel" id="detailPanel">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px">Clique em uma cena para editar</div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="timeline" id="timelineArea" style="display:none">
+  <div class="timeline-tracks" id="timelineTracks"></div>
+  <div class="legend" id="legendArea"></div>
+</div>
+
+<script>
+let manifest = null, manifestFilename = '', selectedScene = -1, dirty = false;
+let videoEl, totalVideoTime = 0;
+
+const TC = { 'fade':'#3B82F6','cut':'#EF4444','zoom-in':'#8B5CF6','zoom-out':'#6366F1','slide-left':'#10B981','whip':'#F59E0B','slide':'#10B981','wipe':'#14B8A6','dissolve':'#06B6D4' };
+const AC = { 'ken-burns':'#06B6D4','fade-in':'#3B82F6','slide-left':'#10B981','slide-right':'#10B981','zoom-in':'#8B5CF6','zoom-out':'#6366F1','bounce':'#F59E0B','kinetic-text':'#EC4899','parallax':'#14B8A6','scale-up':'#F97316' };
+const VC = { 'ai_image':'#EC4899','stock_video':'#10B981','stock_image':'#F59E0B' };
+
+async function init() {
+  videoEl = document.getElementById('videoPlayer');
+  videoEl.addEventListener('timeupdate', onTimeUpdate);
+  videoEl.addEventListener('play', () => document.getElementById('playBtn').textContent = '⏸');
+  videoEl.addEventListener('pause', () => document.getElementById('playBtn').textContent = '▶');
+
+  // Load manifests
+  try {
+    const res = await fetch('/api/manifests');
+    const list = await res.json();
+    const sel = document.getElementById('manifestSelect');
+    list.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.filename;
+      opt.textContent = `${m.title} (${new Date(m.modified).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})`;
+      sel.appendChild(opt);
+    });
+    if (list.length > 0) { sel.value = list[0].filename; loadManifest(list[0].filename); }
+  } catch(e) {}
+
+  // Load videos
+  try {
+    const res = await fetch('/api/videos');
+    const list = await res.json();
+    const sel = document.getElementById('videoSelect');
+    list.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.url;
+      opt.textContent = v.filename;
+      sel.appendChild(opt);
+    });
+    if (list.length > 0) { sel.value = list[0].url; loadVideo(list[0].url); }
+  } catch(e) {}
+}
+
+function loadVideo(url) {
+  if (!url) { videoEl.style.display = 'none'; document.getElementById('noVideoMsg').style.display = ''; document.getElementById('videoControls').style.display = 'none'; return; }
+  videoEl.src = url;
+  videoEl.style.display = '';
+  document.getElementById('noVideoMsg').style.display = 'none';
+  document.getElementById('videoControls').style.display = '';
+  videoEl.addEventListener('loadedmetadata', () => { totalVideoTime = videoEl.duration; }, { once: true });
+}
+
+async function loadManifest(filename) {
+  if (!filename) return;
+  const res = await fetch(`/api/manifest/${filename}`);
+  manifest = await res.json();
+  manifestFilename = filename;
+  selectedScene = 0; dirty = false;
+  document.getElementById('saveBtn').style.display = 'none';
+  render();
+}
+
+async function saveManifest() {
+  if (!manifest || !manifestFilename) return;
+  await fetch(`/api/manifest/${manifestFilename}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(manifest) });
+  dirty = false; document.getElementById('saveBtn').style.display = 'none';
+}
+
+function markDirty() { dirty = true; document.getElementById('saveBtn').style.display = ''; }
+
+function togglePlay() { videoEl.paused ? videoEl.play() : videoEl.pause(); }
+function skipFrames(n) { const fps = manifest?.meta?.fps || 30; videoEl.currentTime = Math.max(0, videoEl.currentTime + n/fps); }
+function seek(e) { const rect = e.currentTarget.getBoundingClientRect(); videoEl.currentTime = ((e.clientX-rect.left)/rect.width) * videoEl.duration; }
+
+function onTimeUpdate() {
+  if (!videoEl.duration) return;
+  const pct = (videoEl.currentTime / videoEl.duration) * 100;
+  document.getElementById('seekFill').style.width = pct + '%';
+  document.getElementById('timeDisplay').textContent = `${fmt(videoEl.currentTime)} / ${fmt(videoEl.duration)}`;
+
+  // Move playheads on timeline
+  document.querySelectorAll('.playhead').forEach(ph => { ph.style.left = pct + '%'; });
+
+  // Auto-highlight current scene
+  if (manifest) {
+    const fps = manifest.meta?.fps || 30;
+    const frame = Math.floor(videoEl.currentTime * fps);
+    for (let i = manifest.scenes.length - 1; i >= 0; i--) {
+      if (frame >= (manifest.scenes[i].startFrame || 0)) {
+        if (i !== selectedScene) { selectedScene = i; render(); }
+        break;
+      }
+    }
+  }
+}
+
+function seekToScene(i) {
+  if (!manifest || !videoEl.duration) return;
+  const fps = manifest.meta?.fps || 30;
+  const startFrame = manifest.scenes[i].startFrame || 0;
+  videoEl.currentTime = startFrame / fps;
+  selectedScene = i;
+  render();
+}
+
+function fmt(sec) { const m = Math.floor(sec/60); const s = Math.floor(sec%60); return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; }
+
+// ============================================================
+function render() {
+  if (!manifest) return;
+  const scenes = manifest.scenes, fps = manifest.meta?.fps || 30;
+  document.getElementById('infoScenes').textContent = scenes.length;
+  document.getElementById('sceneCountLabel').textContent = scenes.length;
+  const totalSec = scenes.reduce((s, sc) => s + (sc.durationInFrames || 0), 0) / fps;
+  document.getElementById('infoDuration').textContent = totalSec.toFixed(1) + 's';
+  renderSceneList(scenes, fps);
+  renderTimeline(scenes, fps);
+  renderDetail(scenes, fps);
+}
+
+function renderSceneList(scenes, fps) {
+  const body = document.getElementById('sceneListBody');
+  body.innerHTML = '';
+  scenes.forEach((sc, i) => {
+    const card = document.createElement('div');
+    card.className = `scene-card${i===selectedScene?' active':''}`;
+    card.onclick = () => seekToScene(i);
+    const dur = (sc.durationInFrames/fps).toFixed(1);
+    const trans = sc.transition||'fade', anim = sc.animation||'ken-burns';
+    const hasHL = sc.headline && sc.headline.length>0;
+    const hasDoc = hasHL && sc.headline.includes('**');
+    card.innerHTML = `
+      <div class="top"><span class="id">${sc.id}</span><span class="type">${sc.type}</span></div>
+      <div class="badges">
+        <span class="badge" style="background:${TC[trans]||'#3B82F6'}22;color:${TC[trans]||'#3B82F6'}">🔄${trans}</span>
+        <span class="badge" style="background:${AC[anim]||'#06B6D4'}22;color:${AC[anim]||'#06B6D4'}">✨${anim}</span>
+        <span class="badge" style="background:${VC[sc.visualType]||'#64748B'}22;color:${VC[sc.visualType]||'#64748B'}">🖼${sc.visualType||'—'}</span>
+        <span class="badge" style="background:rgba(255,255,255,0.04);color:var(--text3)">⏱${dur}s</span>
+        ${hasDoc?'<span class="badge" style="background:#FACC1522;color:#FACC15">📄DOC</span>':''}
+        ${hasHL&&!hasDoc?'<span class="badge" style="background:#fff1;color:#ccc">💬HL</span>':''}
+      </div>
+      ${sc.narrationText?`<div class="narr">${sc.narrationText.slice(0,70)}…</div>`:''}
+    `;
+    body.appendChild(card);
+  });
+  // Scroll active into view
+  const active = body.querySelector('.active');
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function renderDetail(scenes, fps) {
+  const panel = document.getElementById('detailPanel');
+  if (selectedScene < 0 || selectedScene >= scenes.length) return;
+  const sc = scenes[selectedScene], i = selectedScene;
+  const sf = sc.startFrame||0, ef = sf+sc.durationInFrames;
+
+  const transOpts = ['fade','cut','zoom-in','zoom-out','slide-left','whip'].map(t=>`<option value="${t}" ${sc.transition===t?'selected':''}>${t}</option>`).join('');
+  const animOpts = ['ken-burns','fade-in','slide-left','slide-right','zoom-in','zoom-out','bounce','kinetic-text','parallax','scale-up'].map(a=>`<option value="${a}" ${sc.animation===a?'selected':''}>${a}</option>`).join('');
+  const visualOpts = ['ai_image','stock_video','stock_image'].map(v=>`<option value="${v}" ${sc.visualType===v?'selected':''}>${v}</option>`).join('');
+
+  let hlPreview = sc.headline ? sc.headline.replace(/\*\*(.+?)\*\*/g,'<em>$1</em>') : '';
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span style="background:var(--accent);color:#fff;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:700">${sc.id}</span>
+      <span style="font-size:14px;font-weight:700">${sc.type}</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)">${sf}f → ${ef}f (${(sf/fps).toFixed(1)}s → ${(ef/fps).toFixed(1)}s)</span>
+    </div>
+    <div class="detail-grid">
+      <!-- LEFT COL -->
+      <div>
+        <div class="detail-section">
+          <h3>🔄 Transição & Animação</h3>
+          <div class="detail-row"><span class="label">Transição</span><select onchange="editField(${i},'transition',this.value)">${transOpts}</select></div>
+          <div class="detail-row"><span class="label">Trans. Frames</span><input type="number" value="${sc.transitionDurationFrames||4}" min="1" max="15" style="width:60px" onchange="editField(${i},'transitionDurationFrames',+this.value)"/></div>
+          <div class="detail-row"><span class="label">Animação</span><select onchange="editField(${i},'animation',this.value)">${animOpts}</select></div>
+        </div>
+        <div class="detail-section">
+          <h3>🖼 Mídia</h3>
+          <div class="detail-row"><span class="label">Tipo</span><select onchange="editField(${i},'visualType',this.value)">${visualOpts}</select></div>
+          ${sc.stockQuery?`<div class="detail-row"><span class="label">Query</span><input type="text" value="${sc.stockQuery}" onchange="editField(${i},'stockQuery',this.value)"/></div>`:''}
+        </div>
+      </div>
+      <!-- RIGHT COL -->
+      <div>
+        <div class="detail-section">
+          <h3>⏱ Timing</h3>
+          <div class="detail-row"><span class="label">Duração</span><span class="value">${sc.durationInFrames}f (${(sc.durationInFrames/fps).toFixed(1)}s)</span></div>
+          <div class="detail-row"><span class="label">Editar frames</span><input type="number" value="${sc.durationInFrames}" min="30" max="600" style="width:70px" onchange="editField(${i},'durationInFrames',+this.value)"/></div>
+        </div>
+        <div class="detail-section">
+          <h3>${sc.headline&&sc.headline.includes('**')?'📄 Documento':'💬 Headline'}</h3>
+          <input type="text" value="${(sc.headline||'').replace(/"/g,'&quot;')}" onchange="editField(${i},'headline',this.value)" style="width:100%;margin-bottom:6px" placeholder="Vazio = só legenda"/>
+          ${hlPreview?`<div class="text-preview">${hlPreview}</div>`:'<div style="font-size:10px;color:var(--text3)">Sem headline — só legenda</div>'}
+        </div>
+      </div>
+    </div>
+    ${sc.narrationText?`<div class="detail-section"><h3>🎤 Narração</h3><div class="text-preview">${sc.narrationText}</div></div>`:''}
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn-ghost btn btn-sm" ${i<=0?'disabled':''} onclick="seekToScene(${i-1})">← Anterior</button>
+      <button class="btn-ghost btn btn-sm" ${i>=scenes.length-1?'disabled':''} onclick="seekToScene(${i+1})">Próxima →</button>
+    </div>
+  `;
+}
+
+function editField(index, field, value) {
+  if (!manifest) return;
+  manifest.scenes[index][field] = value;
+  markDirty(); render();
+}
+
+function renderTimeline(scenes, fps) {
+  document.getElementById('timelineArea').style.display = '';
+  const totalFrames = manifest.totalDurationInFrames || scenes.reduce((s,sc) => Math.max(s,(sc.startFrame||0)+sc.durationInFrames), 0);
+  const tracks = document.getElementById('timelineTracks');
+  tracks.innerHTML = '';
+
+  [
+    ['🖼 Mídia', sc => ({ bg: VC[sc.visualType]||'#64748B', label: '' })],
+    ['🔄 Trans', sc => ({ bg: TC[sc.transition||'fade']||'#3B82F6', label: sc.transition||'fade' })],
+    ['✨ Anim', sc => ({ bg: AC[sc.animation||'ken-burns']||'#06B6D4', label: sc.animation||'ken-burns' })],
+    ['💬 Texto', sc => { const h=sc.headline&&sc.headline.length>0; const d=h&&sc.headline.includes('**'); return { bg: d?'#FACC15':h?'rgba(255,255,255,0.35)':'rgba(255,255,255,0.06)', label: d?'DOC':h?'HL':'' }; }],
+  ].forEach(([label, fn]) => {
+    const track = document.createElement('div');
+    track.className = 'timeline-track';
+    track.innerHTML = `<div class="track-label">${label}</div>`;
+    const blocksEl = document.createElement('div');
+    blocksEl.className = 'track-blocks';
+
+    scenes.forEach((sc, i) => {
+      const pct = (sc.durationInFrames / totalFrames) * 100;
+      const style = fn(sc);
+      const block = document.createElement('div');
+      block.className = `track-block${i===selectedScene?' active':''}`;
+      block.style.width = `${Math.max(pct,0.8)}%`;
+      block.style.background = style.bg;
+      block.textContent = style.label;
+      block.onclick = () => seekToScene(i);
+      blocksEl.appendChild(block);
+    });
+
+    // Playhead
+    const ph = document.createElement('div');
+    ph.className = 'playhead';
+    ph.style.left = '0%';
+    blocksEl.appendChild(ph);
+
+    track.appendChild(blocksEl);
+    tracks.appendChild(track);
+  });
+
+  // Legend
+  const legend = document.getElementById('legendArea');
+  legend.innerHTML = '';
+  [['ai_image',VC.ai_image],['stock_video',VC.stock_video],['stock_image',VC.stock_image],...Object.entries(TC).slice(0,6)].forEach(([n,c]) => {
+    legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div>${n}</div>`;
+  });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowLeft') { e.preventDefault(); skipFrames(e.shiftKey ? -10 : -1); }
+  if (e.code === 'ArrowRight') { e.preventDefault(); skipFrames(e.shiftKey ? 10 : 1); }
+  if (e.code === 'ArrowUp' && selectedScene > 0) { e.preventDefault(); seekToScene(selectedScene-1); }
+  if (e.code === 'ArrowDown' && manifest && selectedScene < manifest.scenes.length-1) { e.preventDefault(); seekToScene(selectedScene+1); }
+});
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VideoForge — Biblioteca de Animações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0a0a0f;
+  color: #e2e2e8;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AMBIENT BACKGROUND
+   ═══════════════════════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 600px 400px at 15% 20%, rgba(99, 102, 241, 0.08), transparent),
+    radial-gradient(ellipse 500px 500px at 85% 70%, rgba(168, 85, 247, 0.06), transparent),
+    radial-gradient(ellipse 400px 300px at 50% 50%, rgba(59, 130, 246, 0.04), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════ */
+.page-wrapper {
+  position: relative; z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════ */
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+.page-header .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.page-header .logo svg { width: 32px; height: 32px; }
+.page-header .logo span {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.page-header h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.page-header p {
+  margin-top: 0.75rem;
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+  max-width: 560px;
+  margin-left: auto; margin-right: auto;
+}
+.badge-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0.35rem 1rem;
+  border-radius: 100px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a5b4fc;
+}
+.badge-count .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #818cf8;
+  animation: pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONTROLS BAR
+   ═══════════════════════════════════════════════════════════ */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.search-box {
+  position: relative;
+  flex: 1 1 280px;
+  max-width: 360px;
+}
+.search-box svg {
+  position: absolute;
+  left: 14px; top: 50%;
+  transform: translateY(-50%);
+  width: 18px; height: 18px;
+  color: rgba(255,255,255,0.3);
+  pointer-events: none;
+}
+.search-box input {
+  width: 100%;
+  padding: 0.7rem 1rem 0.7rem 2.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #e2e2e8;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.25s ease;
+}
+.search-box input::placeholder { color: rgba(255,255,255,0.3); }
+.search-box input:focus {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(255,255,255,0.06);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILTER TABS
+   ═══════════════════════════════════════════════════════════ */
+.filter-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.filter-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.55);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.filter-tab:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.8);
+  border-color: rgba(255,255,255,0.12);
+}
+.filter-tab.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRID
+   ═══════════════════════════════════════════════════════════ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARD
+   ═══════════════════════════════════════════════════════════ */
+.card {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(255,255,255,0.04);
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 40px -8px rgba(99, 102, 241, 0.12),
+    0 0 0 1px rgba(99, 102, 241, 0.15);
+}
+
+/* PREVIEW STAGE */
+.card-preview {
+  position: relative;
+  height: 180px;
+  background: rgba(0,0,0,0.3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-preview::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(0deg, rgba(10,10,15,0.6) 0%, transparent 40%),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.02) 39px,
+      rgba(255,255,255,0.02) 40px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.02) 39px,
+      rgba(255,255,255,0.02) 40px
+    );
+  pointer-events: none;
+}
+
+/* CARD BODY */
+.card-body { padding: 1.1rem 1.25rem 1.25rem; }
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f0f0f5;
+  letter-spacing: -0.01em;
+}
+.card-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.card-tag.camera   { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+.card-tag.entrada  { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+.card-tag.texto    { background: rgba(251, 191, 36, 0.15); color: #fde68a; }
+.card-tag.transicao{ background: rgba(244, 114, 182, 0.15); color: #f9a8d4; }
+.card-tag.especial { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+.card-desc {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+.card-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.param-chip {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.5);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════════════════════ */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: rgba(255,255,255,0.3);
+  font-size: 1rem;
+  display: none;
+}
+.empty-state.visible { display: block; }
+.empty-state svg { width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.3; }
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION PREVIEW ELEMENTS
+   ═══════════════════════════════════════════════════════════ */
+/* Generic preview object */
+.preview-obj {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  position: relative; z-index: 1;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+.preview-obj-sm {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  position: relative; z-index: 1;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+}
+.preview-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  position: relative; z-index: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.preview-img {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+  z-index: 0;
+}
+.preview-scene {
+  position: absolute; inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS — CÂMERA
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1. Ken Burns Zoom In */
+@keyframes kenBurnsZoomIn {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.anim-kb-zoom-in .preview-img {
+  animation: kenBurnsZoomIn 6s ease-in-out infinite;
+}
+
+/* 2. Ken Burns Zoom Out */
+@keyframes kenBurnsZoomOut {
+  0%   { transform: scale(1.25); }
+  50%  { transform: scale(1); }
+  100% { transform: scale(1.25); }
+}
+.anim-kb-zoom-out .preview-img {
+  animation: kenBurnsZoomOut 6s ease-in-out infinite;
+}
+
+/* 3. Ken Burns Pan Left */
+@keyframes kenBurnsPanLeft {
+  0%   { transform: scale(1.15) translateX(5%); }
+  50%  { transform: scale(1.15) translateX(-5%); }
+  100% { transform: scale(1.15) translateX(5%); }
+}
+.anim-kb-pan-left .preview-img {
+  animation: kenBurnsPanLeft 5s ease-in-out infinite;
+}
+
+/* 4. Ken Burns Pan Right */
+@keyframes kenBurnsPanRight {
+  0%   { transform: scale(1.15) translateX(-5%); }
+  50%  { transform: scale(1.15) translateX(5%); }
+  100% { transform: scale(1.15) translateX(-5%); }
+}
+.anim-kb-pan-right .preview-img {
+  animation: kenBurnsPanRight 5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS — ENTRADA
+   ═══════════════════════════════════════════════════════════ */
+
+/* 5. Fade In */
+@keyframes fadeInPreview {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.anim-fade-in .preview-obj {
+  animation: fadeInPreview 3s ease-in-out infinite;
+}
+
+/* 6. Slide Left */
+@keyframes slideLeftPreview {
+  0%   { transform: translateX(120px); opacity: 0; }
+  25%  { transform: translateX(0); opacity: 1; }
+  75%  { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-120px); opacity: 0; }
+}
+.anim-slide-left .preview-obj {
+  animation: slideLeftPreview 3s ease-in-out infinite;
+}
+
+/* 7. Slide Right */
+@keyframes slideRightPreview {
+  0%   { transform: translateX(-120px); opacity: 0; }
+  25%  { transform: translateX(0); opacity: 1; }
+  75%  { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(120px); opacity: 0; }
+}
+.anim-slide-right .preview-obj {
+  animation: slideRightPreview 3s ease-in-out infinite;
+}
+
+/* 8. Slide Up */
+@keyframes slideUpPreview {
+  0%   { transform: translateY(80px); opacity: 0; }
+  25%  { transform: translateY(0); opacity: 1; }
+  75%  { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-80px); opacity: 0; }
+}
+.anim-slide-up .preview-obj {
+  animation: slideUpPreview 3s ease-in-out infinite;
+}
+
+/* 9. Zoom In (spring bounce) */
+@keyframes zoomInBounce {
+  0%   { transform: scale(0.3); opacity: 0; }
+  50%  { transform: scale(1.12); opacity: 1; }
+  65%  { transform: scale(0.95); }
+  75%  { transform: scale(1.04); }
+  85%  { transform: scale(0.98); }
+  92%  { transform: scale(1.01); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes zoomInBounceLoop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  40%  { transform: scale(1.12); opacity: 1; }
+  52%  { transform: scale(0.95); }
+  60%  { transform: scale(1.04); }
+  68%  { transform: scale(0.98); }
+  74%  { transform: scale(1); }
+  85%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.3); opacity: 0; }
+}
+.anim-zoom-in .preview-obj {
+  animation: zoomInBounceLoop 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+/* 10. Zoom Out */
+@keyframes zoomOutPreview {
+  0%   { transform: scale(1.6); opacity: 0; }
+  25%  { transform: scale(1); opacity: 1; }
+  75%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.anim-zoom-out .preview-obj {
+  animation: zoomOutPreview 3.5s ease-in-out infinite;
+}
+
+/* 11. Bounce */
+@keyframes bouncePreview {
+  0%   { transform: translateY(70px) scale(0.8); opacity: 0; }
+  25%  { transform: translateY(-15px) scale(1.05); opacity: 1; }
+  35%  { transform: translateY(8px) scale(0.97); }
+  45%  { transform: translateY(-4px) scale(1.02); }
+  55%  { transform: translateY(0) scale(1); }
+  80%  { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(70px) scale(0.8); opacity: 0; }
+}
+.anim-bounce .preview-obj {
+  animation: bouncePreview 3s ease-in-out infinite;
+}
+
+/* 12. Scale Up */
+@keyframes scaleUpPreview {
+  0%   { transform: scale(0); opacity: 0; }
+  30%  { transform: scale(1); opacity: 1; }
+  70%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+.anim-scale-up .preview-obj {
+  animation: scaleUpPreview 3s ease-in-out infinite;
+}
+
+/* 13. Parallax */
+@keyframes parallaxFront {
+  0%   { transform: translateX(30px); }
+  50%  { transform: translateX(-30px); }
+  100% { transform: translateX(30px); }
+}
+@keyframes parallaxMid {
+  0%   { transform: translateX(15px); }
+  50%  { transform: translateX(-15px); }
+  100% { transform: translateX(15px); }
+}
+@keyframes parallaxBack {
+  0%   { transform: translateX(5px); }
+  50%  { transform: translateX(-5px); }
+  100% { transform: translateX(5px); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS — TEXTO
+   ═══════════════════════════════════════════════════════════ */
+
+/* 14. Kinetic Text */
+@keyframes kineticWord {
+  0%   { transform: translateY(20px) scale(0.8); opacity: 0; }
+  15%  { transform: translateY(-3px) scale(1.05); opacity: 1; }
+  25%  { transform: translateY(0) scale(1); opacity: 1; }
+  80%  { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 0; }
+}
+
+/* 15. Typewriter */
+@keyframes typewriterCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes typewriterReveal {
+  0%   { width: 0; }
+  60%  { width: 100%; }
+  85%  { width: 100%; }
+  100% { width: 0; }
+}
+
+/* 16. CountUp */
+@keyframes countUpPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS — TRANSIÇÃO
+   ═══════════════════════════════════════════════════════════ */
+
+/* 17. Fade Transition */
+@keyframes fadeTransA {
+  0%   { opacity: 1; }
+  40%  { opacity: 1; }
+  50%  { opacity: 0; }
+  90%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes fadeTransB {
+  0%   { opacity: 0; }
+  40%  { opacity: 0; }
+  50%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 18. Slide Transition */
+@keyframes slideTransA {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(0); }
+  50%  { transform: translateX(-100%); }
+  90%  { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+}
+@keyframes slideTransB {
+  0%   { transform: translateX(100%); }
+  40%  { transform: translateX(100%); }
+  50%  { transform: translateX(0); }
+  90%  { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+/* 19. Wipe */
+@keyframes wipeReveal {
+  0%   { clip-path: inset(0 100% 0 0); }
+  40%  { clip-path: inset(0 100% 0 0); }
+  55%  { clip-path: inset(0 0 0 0); }
+  85%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 100% 0 0); }
+}
+
+/* 20. Dissolve */
+@keyframes dissolveA {
+  0%   { opacity: 1; filter: blur(0); }
+  40%  { opacity: 1; filter: blur(0); }
+  55%  { opacity: 0; filter: blur(4px); }
+  85%  { opacity: 0; filter: blur(4px); }
+  100% { opacity: 1; filter: blur(0); }
+}
+@keyframes dissolveB {
+  0%   { opacity: 0; filter: blur(4px); }
+  40%  { opacity: 0; filter: blur(4px); }
+  55%  { opacity: 1; filter: blur(0); }
+  85%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 0; filter: blur(4px); }
+}
+
+/* 21. Cut */
+@keyframes cutA {
+  0%   { opacity: 1; }
+  49.9%{ opacity: 1; }
+  50%  { opacity: 0; }
+  99.9%{ opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes cutB {
+  0%   { opacity: 0; }
+  49.9%{ opacity: 0; }
+  50%  { opacity: 1; }
+  99.9%{ opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS — ESPECIAL
+   ═══════════════════════════════════════════════════════════ */
+
+/* 22. Pulse */
+@keyframes pulseSpecial {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50%  { transform: scale(1.15); box-shadow: 0 0 30px 8px rgba(99, 102, 241, 0.15); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+}
+.anim-pulse .preview-obj {
+  animation: pulseSpecial 2s ease-in-out infinite;
+}
+
+/* 23. Floating Dots */
+@keyframes floatDot1 {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  25%  { transform: translate(20px, -30px) scale(1.2); opacity: 0.8; }
+  50%  { transform: translate(-10px, -50px) scale(0.8); opacity: 0.5; }
+  75%  { transform: translate(-25px, -20px) scale(1.1); opacity: 0.7; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+}
+@keyframes floatDot2 {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  25%  { transform: translate(-30px, 15px) scale(0.7); opacity: 0.8; }
+  50%  { transform: translate(15px, 30px) scale(1.3); opacity: 0.4; }
+  75%  { transform: translate(25px, -10px) scale(0.9); opacity: 0.7; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+}
+@keyframes floatDot3 {
+  0%   { transform: translate(0, 0) scale(0.8); opacity: 0.7; }
+  33%  { transform: translate(35px, 20px) scale(1.1); opacity: 0.5; }
+  66%  { transform: translate(-20px, -25px) scale(0.6); opacity: 0.9; }
+  100% { transform: translate(0, 0) scale(0.8); opacity: 0.7; }
+}
+
+/* 24. Progress Bar */
+@keyframes progressFill {
+  0%   { width: 0; }
+  70%  { width: 100%; }
+  85%  { width: 100%; }
+  100% { width: 0; }
+}
+@keyframes progressGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(99, 102, 241, 0.4); }
+  50%      { box-shadow: 0 0 20px rgba(99, 102, 241, 0.7); }
+}
+
+/* 25. Lower Third */
+@keyframes lowerThirdSlide {
+  0%   { transform: translateX(-110%) scaleX(0.8); opacity: 0; }
+  15%  { transform: translateX(0) scaleX(1); opacity: 1; }
+  80%  { transform: translateX(0) scaleX(1); opacity: 1; }
+  100% { transform: translateX(-110%) scaleX(0.8); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SPECIFIC PREVIEW LAYOUTS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Parallax layers */
+.parallax-container { position: relative; width: 100%; height: 100%; }
+.parallax-layer {
+  position: absolute;
+  border-radius: 8px;
+}
+.parallax-back {
+  width: 120px; height: 60px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  top: 30%; left: 25%;
+  animation: parallaxBack 4s ease-in-out infinite;
+}
+.parallax-mid {
+  width: 80px; height: 50px;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  top: 40%; left: 40%;
+  animation: parallaxMid 4s ease-in-out infinite;
+}
+.parallax-front {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  top: 35%; left: 50%;
+  animation: parallaxFront 4s ease-in-out infinite;
+}
+
+/* Kinetic text words */
+.kinetic-container {
+  display: flex; gap: 8px;
+  font-size: 1.2rem; font-weight: 700;
+  color: #fff;
+  z-index: 1; position: relative;
+}
+.kinetic-word {
+  animation: kineticWord 4s ease-out infinite;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.kinetic-word:nth-child(1) { animation-delay: 0s; }
+.kinetic-word:nth-child(2) { animation-delay: 0.15s; }
+.kinetic-word:nth-child(3) { animation-delay: 0.3s; }
+.kinetic-word:nth-child(4) { animation-delay: 0.45s; }
+
+/* Typewriter */
+.typewriter-container {
+  position: relative; z-index: 1;
+  display: flex; align-items: center;
+}
+.typewriter-text {
+  font-size: 1.1rem; font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriterReveal 4s steps(12) infinite;
+  border-right: 2px solid #818cf8;
+  padding-right: 2px;
+}
+.typewriter-text::after {
+  content: '';
+  animation: typewriterCursor 0.6s step-end infinite;
+}
+
+/* CountUp */
+.countup-container {
+  position: relative; z-index: 1;
+  text-align: center;
+}
+.countup-number {
+  font-size: 2.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: countUpPulse 2s ease-in-out infinite;
+}
+.countup-label {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+/* Transition previews - dual scene */
+.trans-container {
+  position: absolute; inset: 0;
+  overflow: hidden;
+}
+.trans-scene {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.trans-scene-a {
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+}
+.trans-scene-b {
+  background: linear-gradient(135deg, #7c2d12, #9a3412);
+}
+.trans-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.1);
+}
+
+/* Fade trans */
+.anim-fade-trans .trans-scene-a { animation: fadeTransA 4s ease-in-out infinite; }
+.anim-fade-trans .trans-scene-b { animation: fadeTransB 4s ease-in-out infinite; }
+
+/* Slide trans */
+.anim-slide-trans .trans-scene-a { animation: slideTransA 4s ease-in-out infinite; }
+.anim-slide-trans .trans-scene-b { animation: slideTransB 4s ease-in-out infinite; }
+
+/* Wipe trans */
+.anim-wipe-trans .trans-scene-b { animation: wipeReveal 4s ease-in-out infinite; }
+
+/* Dissolve trans */
+.anim-dissolve-trans .trans-scene-a { animation: dissolveA 5s ease-in-out infinite; }
+.anim-dissolve-trans .trans-scene-b { animation: dissolveB 5s ease-in-out infinite; }
+
+/* Cut trans */
+.anim-cut-trans .trans-scene-a { animation: cutA 2s steps(1) infinite; }
+.anim-cut-trans .trans-scene-b { animation: cutB 2s steps(1) infinite; }
+
+/* Floating dots */
+.dots-container { position: relative; width: 100%; height: 100%; }
+.float-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+}
+.float-dot:nth-child(1) {
+  width: 10px; height: 10px; top: 40%; left: 30%;
+  animation: floatDot1 5s ease-in-out infinite;
+}
+.float-dot:nth-child(2) {
+  width: 14px; height: 14px; top: 50%; left: 55%;
+  animation: floatDot2 6s ease-in-out infinite;
+}
+.float-dot:nth-child(3) {
+  width: 8px; height: 8px; top: 35%; left: 65%;
+  animation: floatDot3 4s ease-in-out infinite;
+}
+.float-dot:nth-child(4) {
+  width: 12px; height: 12px; top: 60%; left: 40%;
+  animation: floatDot1 7s ease-in-out infinite 0.5s;
+}
+.float-dot:nth-child(5) {
+  width: 6px; height: 6px; top: 45%; left: 50%;
+  animation: floatDot2 5.5s ease-in-out infinite 1s;
+}
+.float-dot:nth-child(6) {
+  width: 9px; height: 9px; top: 55%; left: 35%;
+  animation: floatDot3 4.5s ease-in-out infinite 0.3s;
+}
+
+/* Progress bar */
+.progress-container {
+  position: relative; z-index: 1;
+  width: 70%; max-width: 200px;
+}
+.progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #6366f1, #818cf8, #a78bfa);
+  animation: progressFill 3s ease-in-out infinite, progressGlow 3s ease-in-out infinite;
+}
+.progress-pct {
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lower third */
+.lt-container {
+  position: absolute;
+  bottom: 20px; left: 16px; right: 16px;
+  z-index: 1;
+}
+.lt-panel {
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  animation: lowerThirdSlide 5s ease-in-out infinite;
+}
+.lt-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+.lt-subtitle {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.5);
+}
+.lt-accent {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  background: linear-gradient(180deg, #818cf8, #6366f1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: 100%; }
+  .filter-tabs { justify-content: center; }
+  .page-wrapper { padding: 1.5rem 1rem 3rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════ */
+.page-footer {
+  text-align: center;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.25);
+  font-size: 0.8rem;
+}
+.page-footer a {
+  color: #818cf8;
+  text-decoration: none;
+}
+.page-footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- ════════════ HEADER ════════════ -->
+  <header class="page-header">
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="6" width="28" height="20" rx="4" stroke="#818cf8" stroke-width="2"/>
+        <polygon points="13,11 22,16 13,21" fill="#818cf8"/>
+      </svg>
+      <span>VideoForge</span>
+    </div>
+    <h1>Biblioteca de Animações</h1>
+    <p>25 animações prontas para usar nos seus vídeos Remotion. Pré-visualize cada efeito em tempo real.</p>
+    <div class="badge-count">
+      <span class="dot"></span>
+      <span id="visibleCount">25</span> animações disponíveis
+    </div>
+  </header>
+
+  <!-- ════════════ CONTROLS ════════════ -->
+  <div class="controls">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Buscar animação…" />
+    </div>
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-cat="all">Todas</button>
+      <button class="filter-tab" data-cat="camera">Câmera</button>
+      <button class="filter-tab" data-cat="entrada">Entrada</button>
+      <button class="filter-tab" data-cat="texto">Texto</button>
+      <button class="filter-tab" data-cat="transicao">Transição</button>
+      <button class="filter-tab" data-cat="especial">Especial</button>
+    </div>
+  </div>
+
+  <!-- ════════════ GRID ════════════ -->
+  <div class="grid" id="animGrid">
+
+    <!-- ══════ CÂMERA ══════ -->
+
+    <!-- 1. Ken Burns Zoom In -->
+    <div class="card" data-cat="camera" data-name="ken-burns zoom-in" data-keywords="ken burns zoom in documentário câmera">
+      <div class="card-preview anim-kb-zoom-in">
+        <div class="preview-img" style="background: linear-gradient(135deg, #1e1b4b, #312e81, #4c1d95);"></div>
+        <div class="preview-scene">
+          <div class="preview-text" style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">▶ DOCUMENTÁRIO</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">ken-burns zoom-in</span>
+          <span class="card-tag camera">Câmera</span>
+        </div>
+        <p class="card-desc">Zoom lento para dentro, estilo documentário. Cria sensação de foco e intimidade.</p>
+        <div class="card-params">
+          <span class="param-chip">intensity: 1-3</span>
+          <span class="param-chip">direction: in</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Ken Burns Zoom Out -->
+    <div class="card" data-cat="camera" data-name="ken-burns zoom-out" data-keywords="ken burns zoom out câmera revelação">
+      <div class="card-preview anim-kb-zoom-out">
+        <div class="preview-img" style="background: linear-gradient(135deg, #1e1b4b, #312e81, #4c1d95);"></div>
+        <div class="preview-scene">
+          <div class="preview-text" style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">◀ REVELAÇÃO</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">ken-burns zoom-out</span>
+          <span class="card-tag camera">Câmera</span>
+        </div>
+        <p class="card-desc">Zoom lento para fora. Efeito de revelação progressiva da cena completa.</p>
+        <div class="card-params">
+          <span class="param-chip">intensity: 1-3</span>
+          <span class="param-chip">direction: out</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Ken Burns Pan Left -->
+    <div class="card" data-cat="camera" data-name="ken-burns pan-left" data-keywords="ken burns pan esquerda câmera">
+      <div class="card-preview anim-kb-pan-left">
+        <div class="preview-img" style="background: linear-gradient(90deg, #1e1b4b, #312e81, #4338ca, #312e81, #1e1b4b);"></div>
+        <div class="preview-scene">
+          <div class="preview-text" style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">← PAN</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">ken-burns pan-left</span>
+          <span class="card-tag camera">Câmera</span>
+        </div>
+        <p class="card-desc">Pan suave para a esquerda. Perfeito para panoramas e paisagens.</p>
+        <div class="card-params">
+          <span class="param-chip">intensity: 1-3</span>
+          <span class="param-chip">direction: left</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Ken Burns Pan Right -->
+    <div class="card" data-cat="camera" data-name="ken-burns pan-right" data-keywords="ken burns pan direita câmera">
+      <div class="card-preview anim-kb-pan-right">
+        <div class="preview-img" style="background: linear-gradient(90deg, #1e1b4b, #312e81, #4338ca, #312e81, #1e1b4b);"></div>
+        <div class="preview-scene">
+          <div class="preview-text" style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">PAN →</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">ken-burns pan-right</span>
+          <span class="card-tag camera">Câmera</span>
+        </div>
+        <p class="card-desc">Pan suave para a direita. Guia o olhar do espectador lateralmente.</p>
+        <div class="card-params">
+          <span class="param-chip">intensity: 1-3</span>
+          <span class="param-chip">direction: right</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ENTRADA ══════ -->
+
+    <!-- 5. Fade In -->
+    <div class="card" data-cat="entrada" data-name="fade-in" data-keywords="fade in opacidade aparecer entrada">
+      <div class="card-preview anim-fade-in">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">fade-in</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Opacity de 0 para 1 em 20 frames. A entrada mais clássica e elegante.</p>
+        <div class="card-params">
+          <span class="param-chip">frames: 20</span>
+          <span class="param-chip">opacity: 0→1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Slide Left -->
+    <div class="card" data-cat="entrada" data-name="slide-left" data-keywords="slide esquerda deslizar entrada">
+      <div class="card-preview anim-slide-left">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">slide-left</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Desliza da direita para a esquerda com distância de 200px.</p>
+        <div class="card-params">
+          <span class="param-chip">distance: 200px</span>
+          <span class="param-chip">direction: left</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Slide Right -->
+    <div class="card" data-cat="entrada" data-name="slide-right" data-keywords="slide direita deslizar entrada">
+      <div class="card-preview anim-slide-right">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">slide-right</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Desliza da esquerda para a direita. Ideal para elementos laterais.</p>
+        <div class="card-params">
+          <span class="param-chip">distance: 200px</span>
+          <span class="param-chip">direction: right</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Slide Up -->
+    <div class="card" data-cat="entrada" data-name="slide-up" data-keywords="slide cima subir entrada">
+      <div class="card-preview anim-slide-up">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">slide-up</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Desliza de baixo para cima. Entrada vertical com suavidade.</p>
+        <div class="card-params">
+          <span class="param-chip">distance: 200px</span>
+          <span class="param-chip">direction: up</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Zoom In (spring) -->
+    <div class="card" data-cat="entrada" data-name="zoom-in" data-keywords="zoom in escala spring bounce entrada">
+      <div class="card-preview anim-zoom-in">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">zoom-in</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Escala de 0.3→1.0 com spring bounce. Entrada impactante com overshoot.</p>
+        <div class="card-params">
+          <span class="param-chip">scale: 0.3→1.0</span>
+          <span class="param-chip">spring: true</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. Zoom Out -->
+    <div class="card" data-cat="entrada" data-name="zoom-out" data-keywords="zoom out escala reduzir entrada">
+      <div class="card-preview anim-zoom-out">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">zoom-out</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Escala de 1.5→1.0. Elemento aparece grande e se ajusta ao tamanho final.</p>
+        <div class="card-params">
+          <span class="param-chip">scale: 1.5→1.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. Bounce -->
+    <div class="card" data-cat="entrada" data-name="bounce" data-keywords="bounce quicar spring entrada">
+      <div class="card-preview anim-bounce">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">bounce</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Spring bounce com overshoot natural. Damping 8, mass 0.6 — divertido e orgânico.</p>
+        <div class="card-params">
+          <span class="param-chip">damping: 8</span>
+          <span class="param-chip">mass: 0.6</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. Scale Up -->
+    <div class="card" data-cat="entrada" data-name="scale-up" data-keywords="scale escala crescer gradual entrada">
+      <div class="card-preview anim-scale-up">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">scale-up</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Escala gradual de 0→1 em 20 frames. Crescimento linear e suave.</p>
+        <div class="card-params">
+          <span class="param-chip">frames: 20</span>
+          <span class="param-chip">scale: 0→1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. Parallax -->
+    <div class="card" data-cat="entrada" data-name="parallax" data-keywords="parallax profundidade camada entrada">
+      <div class="card-preview">
+        <div class="parallax-container">
+          <div class="parallax-layer parallax-back"></div>
+          <div class="parallax-layer parallax-mid"></div>
+          <div class="parallax-layer parallax-front"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">parallax</span>
+          <span class="card-tag entrada">Entrada</span>
+        </div>
+        <p class="card-desc">Efeito de profundidade com múltiplas camadas se movendo em velocidades diferentes.</p>
+        <div class="card-params">
+          <span class="param-chip">layers: 3</span>
+          <span class="param-chip">depth: multi</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ TEXTO ══════ -->
+
+    <!-- 14. Kinetic Text -->
+    <div class="card" data-cat="texto" data-name="kinetic-text" data-keywords="kinetic texto palavra bounce stagger">
+      <div class="card-preview">
+        <div class="kinetic-container">
+          <span class="kinetic-word">Cada</span>
+          <span class="kinetic-word">palavra</span>
+          <span class="kinetic-word">tem</span>
+          <span class="kinetic-word">vida</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">kinetic-text</span>
+          <span class="card-tag texto">Texto</span>
+        </div>
+        <p class="card-desc">Palavra por palavra com bounce. Stagger de 4 frames entre cada palavra.</p>
+        <div class="card-params">
+          <span class="param-chip">stagger: 4f</span>
+          <span class="param-chip">bounce: true</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 15. Typewriter -->
+    <div class="card" data-cat="texto" data-name="typewriter" data-keywords="typewriter máquina escrever texto letra">
+      <div class="card-preview">
+        <div class="typewriter-container">
+          <span class="typewriter-text">VideoForge_</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">typewriter</span>
+          <span class="card-tag texto">Texto</span>
+        </div>
+        <p class="card-desc">Texto aparecendo letra por letra com cursor piscante. Clássico efeito hacker/terminal.</p>
+        <div class="card-params">
+          <span class="param-chip">speed: per-char</span>
+          <span class="param-chip">cursor: true</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 16. CountUp -->
+    <div class="card" data-cat="texto" data-name="countUp" data-keywords="count contador número animado texto">
+      <div class="card-preview">
+        <div class="countup-container">
+          <div class="countup-number" id="countUpDisplay">0</div>
+          <div class="countup-label">visualizações</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">countUp</span>
+          <span class="card-tag texto">Texto</span>
+        </div>
+        <p class="card-desc">Contador animado de 0 até o valor alvo em 45 frames. Perfeito para métricas.</p>
+        <div class="card-params">
+          <span class="param-chip">frames: 45</span>
+          <span class="param-chip">target: number</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ TRANSIÇÃO ══════ -->
+
+    <!-- 17. Fade (transition) -->
+    <div class="card" data-cat="transicao" data-name="fade" data-keywords="fade crossfade transição cena">
+      <div class="card-preview anim-fade-trans">
+        <div class="trans-container">
+          <div class="trans-scene trans-scene-a"><span class="trans-label">Cena A</span></div>
+          <div class="trans-scene trans-scene-b"><span class="trans-label">Cena B</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">fade</span>
+          <span class="card-tag transicao">Transição</span>
+        </div>
+        <p class="card-desc">Crossfade suave entre duas cenas. A transição mais universal e elegante.</p>
+        <div class="card-params">
+          <span class="param-chip">type: crossfade</span>
+          <span class="param-chip">smooth: true</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 18. Slide (transition) -->
+    <div class="card" data-cat="transicao" data-name="slide" data-keywords="slide deslizar transição cena horizontal">
+      <div class="card-preview anim-slide-trans">
+        <div class="trans-container">
+          <div class="trans-scene trans-scene-a"><span class="trans-label">Cena A</span></div>
+          <div class="trans-scene trans-scene-b"><span class="trans-label">Cena B</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">slide</span>
+          <span class="card-tag transicao">Transição</span>
+        </div>
+        <p class="card-desc">Slide horizontal entre cenas. Uma cena empurra a outra para fora.</p>
+        <div class="card-params">
+          <span class="param-chip">direction: horizontal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 19. Wipe -->
+    <div class="card" data-cat="transicao" data-name="wipe" data-keywords="wipe limpar lateral transição">
+      <div class="card-preview anim-wipe-trans">
+        <div class="trans-container">
+          <div class="trans-scene trans-scene-a"><span class="trans-label">Cena A</span></div>
+          <div class="trans-scene trans-scene-b"><span class="trans-label">Cena B</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">wipe</span>
+          <span class="card-tag transicao">Transição</span>
+        </div>
+        <p class="card-desc">Wipe lateral que revela a próxima cena progressivamente da esquerda.</p>
+        <div class="card-params">
+          <span class="param-chip">direction: left→right</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 20. Dissolve -->
+    <div class="card" data-cat="transicao" data-name="dissolve" data-keywords="dissolve dissolver gradual transição blur">
+      <div class="card-preview anim-dissolve-trans">
+        <div class="trans-container">
+          <div class="trans-scene trans-scene-a"><span class="trans-label">Cena A</span></div>
+          <div class="trans-scene trans-scene-b"><span class="trans-label">Cena B</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">dissolve</span>
+          <span class="card-tag transicao">Transição</span>
+        </div>
+        <p class="card-desc">Dissolve gradual com blur. Cena A desfoca e some enquanto cena B aparece.</p>
+        <div class="card-params">
+          <span class="param-chip">blur: 4px</span>
+          <span class="param-chip">type: dissolve</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 21. Cut -->
+    <div class="card" data-cat="transicao" data-name="cut" data-keywords="cut corte seco instantâneo transição">
+      <div class="card-preview anim-cut-trans">
+        <div class="trans-container">
+          <div class="trans-scene trans-scene-a"><span class="trans-label">Cena A</span></div>
+          <div class="trans-scene trans-scene-b"><span class="trans-label">Cena B</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">cut</span>
+          <span class="card-tag transicao">Transição</span>
+        </div>
+        <p class="card-desc">Corte seco instantâneo. Sem transição — troca imediata entre cenas.</p>
+        <div class="card-params">
+          <span class="param-chip">duration: 0</span>
+          <span class="param-chip">type: instant</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ESPECIAL ══════ -->
+
+    <!-- 22. Pulse -->
+    <div class="card" data-cat="especial" data-name="pulse" data-keywords="pulse pulsação sinusoidal especial">
+      <div class="card-preview anim-pulse">
+        <div class="preview-obj"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">pulse</span>
+          <span class="card-tag especial">Especial</span>
+        </div>
+        <p class="card-desc">Pulsação sinusoidal com escala de 1.0→1.15. Atrai atenção de forma sutil.</p>
+        <div class="card-params">
+          <span class="param-chip">scale: 1.0→1.15</span>
+          <span class="param-chip">wave: sin</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 23. Floating Dots -->
+    <div class="card" data-cat="especial" data-name="floating-dots" data-keywords="floating dots pontos flutuantes decorativo especial">
+      <div class="card-preview">
+        <div class="dots-container">
+          <div class="float-dot"></div>
+          <div class="float-dot"></div>
+          <div class="float-dot"></div>
+          <div class="float-dot"></div>
+          <div class="float-dot"></div>
+          <div class="float-dot"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">floating-dots</span>
+          <span class="card-tag especial">Especial</span>
+        </div>
+        <p class="card-desc">Pontos decorativos flutuantes com movimento orgânico. Fundo animado elegante.</p>
+        <div class="card-params">
+          <span class="param-chip">count: 6</span>
+          <span class="param-chip">motion: organic</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 24. Progress Bar -->
+    <div class="card" data-cat="especial" data-name="progress-bar" data-keywords="progress barra progresso linear glow especial">
+      <div class="card-preview">
+        <div class="progress-container">
+          <div class="progress-track">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="progress-pct" id="progressPct">0%</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">progress-bar</span>
+          <span class="card-tag especial">Especial</span>
+        </div>
+        <p class="card-desc">Barra de progresso linear com glow animado. Ideal para indicadores de carregamento.</p>
+        <div class="card-params">
+          <span class="param-chip">glow: true</span>
+          <span class="param-chip">fill: linear</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 25. Lower Third -->
+    <div class="card" data-cat="especial" data-name="lower-third" data-keywords="lower third terço inferior painel info glassmorphism especial">
+      <div class="card-preview" style="background: linear-gradient(135deg, #1e1b4b, #312e81);">
+        <div class="lt-container">
+          <div class="lt-panel">
+            <div class="lt-accent"></div>
+            <div class="lt-name">Maria Silva</div>
+            <div class="lt-subtitle">CEO — VideoForge Inc.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-name">lower-third</span>
+          <span class="card-tag especial">Especial</span>
+        </div>
+        <p class="card-desc">Painel glassmorphism com slide-in. Perfeito para identificação de pessoas em vídeo.</p>
+        <div class="card-params">
+          <span class="param-chip">style: glass</span>
+          <span class="param-chip">slide: left</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <p>Nenhuma animação encontrada.<br/>Tente outro termo de busca.</p>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- ════════════ FOOTER ════════════ -->
+  <footer class="page-footer">
+    <p>VideoForge Animation Library · 25 animações · Feito com ♥ para <a href="#">Remotion</a></p>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  const searchInput  = document.getElementById('searchInput');
+  const filterTabs   = document.getElementById('filterTabs');
+  const grid         = document.getElementById('animGrid');
+  const cards        = Array.from(grid.querySelectorAll('.card'));
+  const emptyState   = document.getElementById('emptyState');
+  const visibleCount = document.getElementById('visibleCount');
+
+  let currentCat = 'all';
+
+  // ─── FILTERING ────────────────────────────────────────────
+  function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+    let count = 0;
+
+    cards.forEach(card => {
+      const cat  = card.dataset.cat;
+      const name = card.dataset.name;
+      const kw   = card.dataset.keywords || '';
+      const desc = card.querySelector('.card-desc')?.textContent || '';
+
+      const matchCat = currentCat === 'all' || cat === currentCat;
+      const matchSearch = !query ||
+        name.includes(query) ||
+        kw.includes(query) ||
+        desc.toLowerCase().includes(query);
+
+      if (matchCat && matchSearch) {
+        card.style.display = '';
+        count++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    visibleCount.textContent = count;
+    emptyState.classList.toggle('visible', count === 0);
+  }
+
+  // ─── TAB CLICKS ───────────────────────────────────────────
+  filterTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.filter-tab');
+    if (!tab) return;
+
+    filterTabs.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentCat = tab.dataset.cat;
+    applyFilters();
+  });
+
+  // ─── SEARCH ───────────────────────────────────────────────
+  searchInput.addEventListener('input', applyFilters);
+
+  // ─── COUNTUP ANIMATION ────────────────────────────────────
+  const countDisplay = document.getElementById('countUpDisplay');
+  const TARGET = 12847;
+  let countCycle = null;
+
+  function animateCount() {
+    let start = 0;
+    const duration = 2000;
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * TARGET);
+      countDisplay.textContent = current.toLocaleString('pt-BR');
+
+      if (progress < 1) {
+        countCycle = requestAnimationFrame(step);
+      } else {
+        countDisplay.textContent = TARGET.toLocaleString('pt-BR');
+        setTimeout(() => {
+          countDisplay.textContent = '0';
+          setTimeout(animateCount, 600);
+        }, 2000);
+      }
+    }
+    countCycle = requestAnimationFrame(step);
+  }
+  animateCount();
+
+  // ─── PROGRESS BAR % ──────────────────────────────────────
+  const progressPct = document.getElementById('progressPct');
+  function animateProgress() {
+    const cycleDuration = 3000; // matches CSS animation
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = (now - startTime) % cycleDuration;
+      const ratio = elapsed / cycleDuration;
+      // Matches the CSS keyframe: 0→70% = fill, 70→85% = hold, 85→100% = reset
+      let pct;
+      if (ratio < 0.7) {
+        pct = Math.round((ratio / 0.7) * 100);
+      } else if (ratio < 0.85) {
+        pct = 100;
+      } else {
+        pct = 0;
+      }
+      progressPct.textContent = pct + '%';
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  animateProgress();
+
+})();
+</script>
+
+</body>
+</html>

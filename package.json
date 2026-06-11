@@ -1,0 +1,33 @@
+{
+  "name": "video-forge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "🧠 VideoForge — Gerador automático de vídeos curtos com IA",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "generate": "tsx scripts/generate.ts",
+    "remotion:dev": "pnpm --filter remotion-app dev",
+    "remotion:render": "pnpm --filter remotion-app render",
+    "studio": "pnpm --filter remotion-app dev",
+    "dev:web": "pnpm --filter @video-forge/web dev",
+    "dev:translate": "cd apps/translation-pipeline && uvicorn src.server:app --host 0.0.0.0 --port 8000 --reload"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "tsx": "^4.19.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "remotion>zod": "4.3.6",
+      "@remotion/cli>zod": "4.3.6"
+    }
+  }
+}

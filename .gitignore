@@ -1,0 +1,70 @@
+# ── Secrets & Environment ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep .env.example (template without real keys)
+
+# ── Node / JS ────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+.cache/
+
+# ── Python ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+venv/
+.venv/
+env/
+
+# ── Pipeline: Database & Runtime data ────────────────────────────────
+apps/translation-pipeline/data/
+apps/translation-pipeline/workspace/
+*.db
+*.sqlite
+
+# ── Pipeline: Binary executables (large, OS-specific) ────────────────
+apps/translation-pipeline/bin/ffmpeg
+apps/translation-pipeline/bin/ffmpeg.zip
+apps/translation-pipeline/bin/yt-dlp
+
+# ── Media files (never commit videos/audio) ──────────────────────────
+*.mp4
+*.mp3
+*.wav
+*.aac
+*.webm
+*.mov
+*.mkv
+*.avi
+
+# ── Asset folders with generated/downloaded content ──────────────────
+assets/output/
+assets/downloaded/
+assets/generated/
+assets/temp/
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+/tmp/
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# ── IDE ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo

@@ -1,0 +1,38 @@
+# === Server ===
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+sse-starlette==2.2.1
+
+# === Database ===
+aiosqlite==0.21.0
+
+# === Video Download ===
+yt-dlp==2024.12.23
+
+# === OCR ===
+paddlepaddle==3.0.0
+paddleocr==2.10.0
+
+# === Computer Vision ===
+opencv-python-headless==4.11.0.86
+numpy>=1.26.0,<2.0.0
+Pillow>=10.0.0
+
+# === AI / Translation ===
+anthropic==0.52.0
+assemblyai==0.37.0
+
+# === TTS (MiniMax via HTTP) ===
+httpx==0.28.1
+aiofiles==24.1.0
+
+# === Environment ===
+python-dotenv==1.1.0
+
+# === Logging ===
+structlog==25.1.0
+
+# === Utilities ===
+pydantic==2.11.1
+pydantic-settings==2.9.1
