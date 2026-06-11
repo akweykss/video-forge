@@ -356,7 +356,7 @@ body{
           <div class="panel-label" data-i18n="finishing">Acabamento</div>
 
           <div class="row">
-            <div class="field"><label data-i18n="lbl_grain">Textura de filme</label><select class="select" id="grainSelect"><option data-i18n="grain_subtle">Sutil</option><option data-i18n="grain_none">Nenhuma</option><option data-i18n="grain_med">Média</option><option data-i18n="grain_strong">Forte</option></select></div>
+            <div class="field"><label data-i18n="lbl_grain">Textura de filme</label><select class="select" id="grainSelect"><option value="subtle" data-i18n="grain_subtle">Sutil</option><option value="none" data-i18n="grain_none">Nenhuma</option><option value="medium" data-i18n="grain_med">Média</option><option value="strong" data-i18n="grain_strong">Forte</option></select></div>
             <div class="field"><label>Color grade — <span class="tc" id="lutLabel">50%</span></label><input type="range" class="slider" id="lutSlider" value="50" style="margin-top:12px" oninput="document.getElementById('lutLabel').textContent=this.value+'%'"></div>
           </div>
 
@@ -1124,7 +1124,7 @@ function detailHtml(j){
     <div class="detail-cols">
       <div>
         <div class="panel-label">${t('before_after')}</div>
-        <video class="phone" style="max-height:280px;object-fit:cover" src="/api/translate/stream/source/${j.id}" controls preload="metadata"></video>
+        <video class="phone" style="max-height:280px;object-fit:cover" src="/api/translate/stream/source/${j.id}" controls preload="metadata" onerror="this.style.display='none'"></video>
       </div>
       <div>
         <div class="panel-label">${t('script_label')}</div>

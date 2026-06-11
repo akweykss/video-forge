@@ -41,6 +41,7 @@ class SynthesisAgent:
         self.apply_grain = apply_grain
         self.apply_minterp = apply_minterp
         self.grain_intensity = grain_intensity
+        self.lut_opacity = 1.0
         self.lut_path = lut_path
         self.ffmpeg = FFmpegWrapper()
 
@@ -255,6 +256,7 @@ class SynthesisAgent:
                 apply_grain_flag=self.apply_grain,
                 lut_path=self.lut_path,
                 grain_intensity=self.grain_intensity,
+                lut_opacity=float(getattr(self, "lut_opacity", 1.0)),
                 work_dir=work_dir,
                 progress_callback=_synth_progress,
                 segment_speeds=segment_speeds,

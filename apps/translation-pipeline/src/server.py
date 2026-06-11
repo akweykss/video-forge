@@ -148,6 +148,8 @@ class ApproveJobRequest(BaseModel):
     apply_lut: bool = Field(default=True, description="Apply LUT color grade")
     apply_grain: bool = Field(default=True, description="Apply film grain")
     apply_minterp: bool = Field(default=False, description="Apply motion interpolation (slow)")
+    grain_intensity: Optional[int] = Field(default=None, description="Film grain strength (0-16)")
+    lut_intensity: Optional[int] = Field(default=None, description="LUT color grade intensity (0-100)")
 
 
 class RetryJobRequest(BaseModel):
@@ -181,6 +183,36 @@ class StatsResponse(BaseModel):
 # Background Task Runner
 # ═══════════════════════════════════════════════════════════════════
 
+def _settings_from_metadata(meta: Optional[dict]) -> ApproveJobRequest:
+    """Converte o metadata do job (vindo do HUD) em settings do pipeline.
+
+    Aceita os valores canônicos da UI nova (subtle/none/medium/strong) e
+    os rótulos antigos em PT (Sutil/Nenhuma/Média/Forte).
+    """
+    meta = meta or {}
+    grain_raw = str(meta.get("grain_level", "subtle") or "subtle").strip().lower()
+    grain_map = {
+        "nenhuma": 0, "none": 0, "sem": 0, "off": 0,
+        "sutil": 6, "subtle": 6,
+        "média": 10, "media": 10, "medium": 10,
+        "forte": 16, "strong": 16, "heavy": 16,
+    }
+    grain_intensity = grain_map.get(grain_raw, 8)
+    try:
+        lut_intensity = int(meta.get("lut_intensity", 100))
+    except Exception:
+        lut_intensity = 100
+    lut_intensity = max(0, min(100, lut_intensity))
+    return ApproveJobRequest(
+        voice_id=meta.get("voice_id") or None,
+        character_id=meta.get("character_id") or None,
+        apply_lut=lut_intensity > 0,
+        apply_grain=grain_intensity > 0,
+        grain_intensity=grain_intensity,
+        lut_intensity=lut_intensity,
+    )
+
+
 async def run_pipeline(job_id: str, settings: Optional[ApproveJobRequest] = None):
     """Run the complete translation pipeline for a job in background.
 
@@ -188,6 +220,22 @@ async def run_pipeline(job_id: str, settings: Optional[ApproveJobRequest] = None
     Emits real-time progress updates for SSE consumers.
     """
     agents = _get_agents()
+
+    # Sem settings explícitas → reconstrói a partir do metadata do job,
+    # para voz/grain/LUT valerem também em retry e chamadas diretas
+    if settings is None:
+        try:
+            _job0 = await db.get_job(job_id)
+            _m0 = _job0.metadata if isinstance(_job0.metadata, dict) else {}
+            if isinstance(_job0.metadata, str):
+                import json as _j0
+                try:
+                    _m0 = _j0.loads(_job0.metadata)
+                except Exception:
+                    _m0 = {}
+            settings = _settings_from_metadata(_m0)
+        except Exception:
+            settings = None
 
     try:
         logger.info("pipeline.start", job_id=job_id)
@@ -283,6 +331,10 @@ async def run_pipeline(job_id: str, settings: Optional[ApproveJobRequest] = None
             agents["synthesis"].apply_lut = settings.apply_lut
             agents["synthesis"].apply_grain = settings.apply_grain
             agents["synthesis"].apply_minterp = settings.apply_minterp
+            if getattr(settings, "grain_intensity", None) is not None:
+                agents["synthesis"].grain_intensity = settings.grain_intensity
+            if getattr(settings, "lut_intensity", None) is not None:
+                agents["synthesis"].lut_opacity = max(0.0, min(1.0, settings.lut_intensity / 100.0))
         manifest = await agents["synthesis"].process(job_id)
 
         if manifest:
@@ -316,6 +368,28 @@ async def retry_pipeline(job_id: str):
     job = await db.get_job(job_id)
     if not job:
         return
+
+    # Reaplica as configurações do job (voz, grain, LUT) ao retomar
+    try:
+        _mR = job.metadata if isinstance(job.metadata, dict) else {}
+        if isinstance(job.metadata, str):
+            import json as _jR
+            try:
+                _mR = _jR.loads(job.metadata)
+            except Exception:
+                _mR = {}
+        _sR = _settings_from_metadata(_mR)
+        _agR = _get_agents()
+        if _sR.voice_id:
+            _agR["voice"].minimax_voice_id = _sR.voice_id
+        _agR["synthesis"].apply_lut = _sR.apply_lut
+        _agR["synthesis"].apply_grain = _sR.apply_grain
+        if _sR.grain_intensity is not None:
+            _agR["synthesis"].grain_intensity = _sR.grain_intensity
+        if _sR.lut_intensity is not None:
+            _agR["synthesis"].lut_opacity = max(0.0, min(1.0, _sR.lut_intensity / 100.0))
+    except Exception:
+        pass
 
     # Map current status to phase
     status_to_phase = {
@@ -1130,10 +1204,7 @@ async def frontend_approve(job_id: str, background_tasks: BackgroundTasks):
             meta = _jm.loads(job.metadata)
         except Exception:
             meta = {}
-    req = ApproveJobRequest(
-        character_id=meta.get("character_id"),
-        voice_id=meta.get("voice_id"),
-    )
+    req = _settings_from_metadata(meta)
     return await approve_job(job_id, req, background_tasks)
 
 

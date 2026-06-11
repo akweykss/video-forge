@@ -738,6 +738,7 @@ class FFmpegWrapper:
         apply_minterp_flag: bool = False,
         lut_path: Optional[str | Path] = None,
         grain_intensity: int = 8,
+        lut_opacity: float = 1.0,
         work_dir: Optional[str | Path] = None,
         progress_callback: Optional[callable] = None,
         segment_speeds: Optional[list[dict]] = None,
@@ -851,7 +852,12 @@ class FFmpegWrapper:
 
         # ── Build filter graph ────────────────────────────────────
         # Strategy: if blur is needed OR segment_speeds, we MUST use filter_complex
-        use_filter_complex = sub_blur_region is not None or (segment_speeds and len(segment_speeds) > 1) or vertical_canvas
+        use_filter_complex = (
+            sub_blur_region is not None
+            or (segment_speeds and len(segment_speeds) > 1)
+            or vertical_canvas
+            or (safe_lut is not None and lut_opacity < 0.999)
+        )
 
         if use_filter_complex:
             filter_graph = self._build_filter_complex(
@@ -864,6 +870,7 @@ class FFmpegWrapper:
                 grain_intensity=grain_intensity,
                 segment_speeds=segment_speeds,
                 vertical_canvas=vertical_canvas,
+                lut_opacity=lut_opacity,
             )
             if safe_ass and has_subtitles_filter:
                 _subs_applied = True
@@ -993,6 +1000,7 @@ class FFmpegWrapper:
         grain_intensity: int = 8,
         segment_speeds: Optional[list[dict]] = None,
         vertical_canvas: bool = False,
+        lut_opacity: float = 1.0,
     ) -> str:
         """Build a filter_complex graph string with optional gblur per-segment sync.
 
@@ -1098,20 +1106,26 @@ class FFmpegWrapper:
             parts.append("[vc_bgb][vc_fgs]overlay=(W-w)/2:(H-h)/2[vcanvas]")
             stage4_input = "[vcanvas]"
 
-        # ── Stage 4: post-processing (subtitles, LUT, grain) ───────────
-        post_filters: list[str] = []
+        # ── Stage 4: post-processing (subtitles, LUT c/ intensidade, grain) ──
+        cur = stage4_input
         if safe_ass:
-            post_filters.append(f"subtitles=filename={safe_ass}")
+            parts.append(f"{cur}subtitles=filename={safe_ass}[s4_subs]")
+            cur = "[s4_subs]"
         if safe_lut:
-            post_filters.append(f"lut3d=file='{safe_lut}'")
+            if lut_opacity >= 0.999:
+                parts.append(f"{cur}lut3d=file='{safe_lut}'[s4_lut]")
+            else:
+                # Intensidade do color grade: mistura original + graduado
+                parts.append(f"{cur}split=2[s4_l0][s4_l1]")
+                parts.append(f"[s4_l1]lut3d=file='{safe_lut}'[s4_lg]")
+                parts.append(
+                    f"[s4_l0][s4_lg]blend=all_mode=normal:all_opacity={lut_opacity:.3f}[s4_lut]"
+                )
+            cur = "[s4_lut]"
         if apply_grain and grain_intensity > 0:
-            post_filters.append(f"noise=c0s={grain_intensity}:c0f=t+u")
-
-        if post_filters:
-            post_chain = ",".join(post_filters)
-            parts.append(f"{stage4_input}{post_chain}[vout]")
+            parts.append(f"{cur}noise=c0s={grain_intensity}:c0f=t+u[vout]")
         else:
-            parts.append(f"{stage4_input}null[vout]")
+            parts.append(f"{cur}null[vout]")
 
         return ";".join(parts)
 
