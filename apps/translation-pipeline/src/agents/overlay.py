@@ -84,6 +84,7 @@ class OverlayAgent:
                 try: _job_meta_ov = _jm_ov.loads(job.metadata)
                 except: _job_meta_ov = {}
             _skip_blur = bool(_job_meta_ov.get("remove_watermark"))
+            _sub_style = str(_job_meta_ov.get("subtitle_style") or "cinema")
 
             # Step 1: Calculate subtitle blur region from OCR
             if _skip_blur:
@@ -120,6 +121,7 @@ class OverlayAgent:
                 output_path=ass_path,
                 video_width=width,
                 video_height=height,
+                style=_sub_style,
                 sub_blur_y=sub_y,
                 sub_blur_h=sub_h,
             )

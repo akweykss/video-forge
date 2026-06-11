@@ -122,6 +122,17 @@ h1{font-family:var(--serif);font-size:23px;font-weight:500}
 .char-thumb .ph{width:50px;height:50px;border-radius:11px;background:var(--surface2);border:2px solid transparent;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .char-thumb.selected .ph{border-color:var(--accent)}
 .char-thumb.selected{color:var(--accent)}
+.substyle-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.substyle{border:2px solid var(--border);border-radius:10px;background:none;padding:0;cursor:pointer;overflow:hidden;text-align:center}
+.substyle:hover{border-color:var(--raise)}
+.substyle.selected{border-color:var(--accent)}
+.substyle .prev{height:52px;display:flex;align-items:center;justify-content:center;background:#0e0e0d}
+.substyle .ssname{font-size:10.5px;color:var(--muted);padding:5px 4px;background:var(--surface)}
+.substyle.selected .ssname{color:var(--accent)}
+.ss-cinema{color:#ffe400;background:rgba(0,0,0,.62);padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px}
+.ss-classica{color:#fff;background:rgba(0,0,0,.62);padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px}
+.ss-limpa{color:#fff;font-weight:700;font-size:11px;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000}
+.ss-dourada{color:#ffc814;font-weight:700;font-size:11px;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000}
 .phone{aspect-ratio:9/16;background:var(--logbg);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--faint)}
 
 .deck-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
@@ -347,6 +358,28 @@ body{
           <div class="row">
             <div class="field"><label data-i18n="lbl_grain">Textura de filme</label><select class="select" id="grainSelect"><option data-i18n="grain_subtle">Sutil</option><option data-i18n="grain_none">Nenhuma</option><option data-i18n="grain_med">Média</option><option data-i18n="grain_strong">Forte</option></select></div>
             <div class="field"><label>Color grade — <span class="tc" id="lutLabel">50%</span></label><input type="range" class="slider" id="lutSlider" value="50" style="margin-top:12px" oninput="document.getElementById('lutLabel').textContent=this.value+'%'"></div>
+          </div>
+
+          <div class="field">
+            <label data-i18n="lbl_substyle">Estilo da legenda</label>
+            <div class="substyle-grid" id="subStyles">
+              <button type="button" class="substyle selected" data-ss="cinema" onclick="pickSubStyle('cinema')">
+                <div class="prev"><span class="ss-cinema" data-i18n="ss_sample">Sua legenda</span></div>
+                <div class="ssname" data-i18n="ss_cinema">Amarela cinema</div>
+              </button>
+              <button type="button" class="substyle" data-ss="classica" onclick="pickSubStyle('classica')">
+                <div class="prev"><span class="ss-classica" data-i18n="ss_sample">Sua legenda</span></div>
+                <div class="ssname" data-i18n="ss_classica">Branca clássica</div>
+              </button>
+              <button type="button" class="substyle" data-ss="limpa" onclick="pickSubStyle('limpa')">
+                <div class="prev"><span class="ss-limpa" data-i18n="ss_sample">Sua legenda</span></div>
+                <div class="ssname" data-i18n="ss_limpa">Branca limpa</div>
+              </button>
+              <button type="button" class="substyle" data-ss="dourada" onclick="pickSubStyle('dourada')">
+                <div class="prev"><span class="ss-dourada" data-i18n="ss_sample">Sua legenda</span></div>
+                <div class="ssname" data-i18n="ss_dourada">Dourada</div>
+              </button>
+            </div>
           </div>
 
           <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -659,6 +692,12 @@ LANGS.pt.toast_tts = 'Não foi possível gerar a prévia da voz';
 LANGS.en.toast_tts = 'Could not generate the voice preview';
 LANGS.pt.review_note = 'Confira o vídeo original ao lado e aprove para gerar narração final, legendas e master.';
 LANGS.en.review_note = 'Check the original video on the left and approve to render the final voiceover, subtitles and master.';
+LANGS.pt.lbl_substyle = 'Estilo da legenda';   LANGS.en.lbl_substyle = 'Subtitle style';
+LANGS.pt.ss_sample = 'Sua legenda';            LANGS.en.ss_sample = 'Your subtitle';
+LANGS.pt.ss_cinema = 'Amarela cinema';         LANGS.en.ss_cinema = 'Cinema yellow';
+LANGS.pt.ss_classica = 'Branca clássica';      LANGS.en.ss_classica = 'Classic white';
+LANGS.pt.ss_limpa = 'Branca limpa';            LANGS.en.ss_limpa = 'Clean white';
+LANGS.pt.ss_dourada = 'Dourada';               LANGS.en.ss_dourada = 'Golden';
 
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
@@ -921,6 +960,14 @@ dz.addEventListener('drop',e=>{
   const f = e.dataTransfer.files[0];
   if(f){ $('charFile').files = e.dataTransfer.files; onCharFile({target:{files:[f]}}); }
 });
+
+/* ---------- estilo de legenda ---------- */
+let subStyle = (()=>{ try{ return localStorage.getItem('fold-substyle') || 'cinema'; }catch(e){ return 'cinema'; } })();
+function pickSubStyle(s){
+  subStyle = s;
+  try{ localStorage.setItem('fold-substyle', s); }catch(e){}
+  document.querySelectorAll('#subStyles .substyle').forEach(b=>b.classList.toggle('selected', b.dataset.ss===s));
+}
 
 /* ---------- fila (API) ---------- */
 const PHASES_ALL = {pt:['Captura','Limpeza','Narração','Legendas','Master'], en:['Capture','Cleanup','Voiceover','Subtitles','Master']};
@@ -1185,6 +1232,7 @@ async function produce(){
     grain_level: $('grainSelect').value,
     lut_intensity: parseInt($('lutSlider').value),
     remove_watermark: $('wmToggle').classList.contains('on'),
+    subtitle_style: subStyle,
   };
   if(selectedChar) meta.character_id = selectedChar;
   const body = {
@@ -1303,6 +1351,7 @@ try{
   }
 }catch(e){}
 const uiSel = $('uiLang'); if(uiSel) uiSel.value = LNG;
+pickSubStyle(subStyle);
 applyStatic();
 renderVoiceSelect();
 renderVoices();

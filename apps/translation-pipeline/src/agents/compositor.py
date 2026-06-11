@@ -105,6 +105,7 @@ class LayoutCompositor:
         fps: int = 25,
         layout_duration: float = 8.0,
         progress_callback: Optional[Callable] = None,
+        subtitle_style: str = "cinema",
     ) -> Path:
         """Composite *video_path* and *avatar_path* into a 9:16 output.
 
@@ -163,6 +164,7 @@ class LayoutCompositor:
             layout_duration=layout_duration,
             fps=fps,
             subtitle_segments=subtitle_segments,
+            subtitle_style=subtitle_style,
         )
 
         logger.info(
@@ -257,6 +259,7 @@ class LayoutCompositor:
         layout_duration: float,
         fps: int,
         subtitle_segments: Optional[list[dict]] = None,
+        subtitle_style: str = "cinema",
     ) -> str:
         """Build the FFmpeg ``-filter_complex`` string.
 
@@ -496,7 +499,13 @@ class LayoutCompositor:
             sub_y_cb = (CANVAS_H // 2) + SUBTITLE_CONFIG["center_blur_offset"]
 
             font_size = SUBTITLE_CONFIG["font_size"]
-            font_color = SUBTITLE_CONFIG["font_color"]
+            _style_map = {
+                "cinema":   ("yellow",   True),
+                "classica": ("white",    True),
+                "limpa":    ("white",    False),
+                "dourada":  ("0xFFC814", False),
+            }
+            font_color, _style_box = _style_map.get(str(subtitle_style).lower(), ("yellow", True))
             border_w = SUBTITLE_CONFIG["border_width"]
             border_color = SUBTITLE_CONFIG["border_color"]
 
@@ -565,7 +574,7 @@ class LayoutCompositor:
                     f"shadowy={SUBTITLE_CONFIG.get('shadow_y', 2)}",
                     f"shadowcolor={SUBTITLE_CONFIG.get('shadow_color', 'black@0.6')}",
                 ])
-                if SUBTITLE_CONFIG.get("box"):
+                if SUBTITLE_CONFIG.get("box") and _style_box:
                     dt_parts.extend([
                         "box=1",
                         f"boxcolor={SUBTITLE_CONFIG.get('box_color', 'black@0.5')}",

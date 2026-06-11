@@ -96,6 +96,7 @@ class SynthesisAgent:
                     _job_meta = _jm.loads(job.metadata)
                 except Exception:
                     _job_meta = {}
+            _sub_style = str(_job_meta.get("subtitle_style") or "cinema")
 
             if manifest._data.get("watermark_removed") or _job_meta.get("remove_watermark"):
                 sub_blur_region = None
@@ -302,6 +303,33 @@ class SynthesisAgent:
                     error=str(sub_err),
                 )
 
+            # DreamFace falhou/sumiu → queima a legenda no vídeo já renderizado,
+            # para o master NUNCA sair sem legenda.
+            async def _fallback_burn(src_path: Path) -> Path:
+                if not ass_subtitle_path or not Path(ass_subtitle_path).exists():
+                    return src_path
+                burned = output_dir / f"translated_{job_id[:8]}_subs.mp4"
+                cmd = [
+                    str(self.ffmpeg.ffmpeg), "-y", "-i", str(src_path),
+                    "-vf", f"ass='{str(ass_subtitle_path)}'",
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "19",
+                    "-c:a", "copy", str(burned),
+                ]
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                _, _stderr = await proc.communicate()
+                if proc.returncode == 0 and burned.exists():
+                    logger.info("synthesis.fallback_subs_burned", output=str(burned))
+                    return burned
+                logger.warning(
+                    "synthesis.fallback_subs_failed",
+                    error=(_stderr or b"")[-300:].decode(errors="ignore"),
+                )
+                return src_path
+
             # ── Phase 2: Await DreamFace + Compose 9:16 ─────────────────
             if dreamface_task:
                 try:
@@ -320,6 +348,7 @@ class SynthesisAgent:
                             avatar_path=lipsync_result,
                             output_path=composed_path,
                             subtitle_segments=sub_segments or None,
+                            subtitle_style=_sub_style,
                             fps=25,
                             layout_duration=8.0,
                             progress_callback=lambda pct, msg: _synth_progress(
@@ -334,6 +363,8 @@ class SynthesisAgent:
                         )
                     else:
                         logger.warning("synthesis.lipsync_result_missing")
+                        _synth_progress(97, "⚠️ Avatar indisponível — queimando legendas no vídeo...")
+                        final_path = await _fallback_burn(final_path)
 
                 except Exception as ls_err:
                     logger.warning(
@@ -341,6 +372,8 @@ class SynthesisAgent:
                         error=str(ls_err),
                         msg="Video saved without lip sync overlay",
                     )
+                    _synth_progress(97, "⚠️ Avatar falhou — queimando legendas no vídeo...")
+                    final_path = await _fallback_burn(final_path)
 
             # Get final video stats
             duration = await self.ffmpeg.get_duration(final_path)

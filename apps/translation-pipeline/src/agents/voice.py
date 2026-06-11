@@ -756,16 +756,35 @@ class VoiceAgent:
         segments_json = json.dumps(transcription_segments, ensure_ascii=False, indent=2)
         ocr_json = json.dumps(ocr_texts, ensure_ascii=False) if ocr_texts else "[]"
 
-        system_prompt = f"""You are a professional video translator specializing in {source_language} to {target_language} translation.
-You must translate video content while preserving:
-- Natural speech patterns and timing
-- Emotional tone and emphasis  
-- Cultural context (adapt idioms appropriately)
-- Technical accuracy
+        # Perfil regional do idioma de destino — a tradução deve soar nativa
+        LANG_PROFILES = {
+            "pt-br": ("Brazilian Portuguese (português do Brasil)", "Brazilian"),
+            "pt":    ("Brazilian Portuguese (português do Brasil)", "Brazilian"),
+            "en":    ("American English", "American"),
+            "en-us": ("American English", "American"),
+            "es":    ("Latin American Spanish (español latinoamericano)", "Latin American"),
+            "fr":    ("French from France (français de France)", "French"),
+            "de":    ("German from Germany (Deutsch aus Deutschland)", "German"),
+            "it":    ("Italian (italiano)", "Italian"),
+            "ja":    ("Japanese (日本語)", "Japanese"),
+            "ko":    ("Korean (한국어)", "Korean"),
+            "hi":    ("Hindi (हिन्दी)", "Indian"),
+            "ru":    ("Russian (русский)", "Russian"),
+        }
+        lang_name, audience = LANG_PROFILES.get(
+            str(target_language).strip().lower(), (target_language, target_language)
+        )
+
+        system_prompt = f"""You are a native {lang_name} speaker and a professional localizer of short-form social video ({source_language} → {lang_name}).
+Your translations must read as if originally written by a native {audience} content creator for Reels/TikTok:
+- Use the natural register, rhythm and everyday vocabulary of {lang_name} — never literal or calqued phrasing
+- Adapt idioms, slang, humor and cultural references so they land with a {audience} audience
+- Localize numbers, units, currency and expressions the way {lang_name} natively writes them
+- Preserve emotional tone, emphasis and timing of the original speech
 
 CRITICAL RULES:
-- You MUST translate ALL text to {target_language}. NEVER leave text in the original language.
-- Each segment MUST have a "translated" field with the translation in {target_language}.
+- You MUST translate ALL text to {lang_name}. NEVER leave text in the original language.
+- Each segment MUST have a "translated" field with the translation in {lang_name}.
 - Keep each subtitle segment short (max 2 lines, ~60 chars per line) for readability.
 - Respond ONLY with valid JSON, no markdown or extra text."""
 
@@ -778,20 +797,20 @@ CRITICAL RULES:
 {ocr_json}
 
 ## Instructions
-1. Translate each speech segment to {target_language}, keeping the same start/end timestamps
-2. Translate each OCR text overlay to {target_language}
-3. Keep translations natural and conversational for Brazilian Portuguese
-4. Adapt cultural references for a Brazilian audience
-5. IMPORTANT: Each segment's "translated" field MUST contain {target_language} text, NOT the original language
+1. Translate each speech segment to {lang_name}, keeping the same start/end timestamps
+2. Translate each OCR text overlay to {lang_name}
+3. Keep translations natural and conversational in {lang_name}, as a native speaker would phrase them
+4. Adapt idioms, slang and cultural references for a {audience} audience
+5. IMPORTANT: Each segment's "translated" field MUST contain {lang_name} text, NOT the original language
 
 Respond with this exact JSON structure:
 {{
   "segments": [
-    {{"start": 0.0, "end": 2.5, "original": "original text", "translated": "translated text in {target_language}"}}
+    {{"start": 0.0, "end": 2.5, "original": "original text", "translated": "translated text in {lang_name}"}}
   ],
-  "full_text": "complete translated text in {target_language}",
+  "full_text": "complete translated text in {lang_name}",
   "text_overlays": [
-    {{"original": "original overlay", "translated": "translated overlay in {target_language}"}}
+    {{"original": "original overlay", "translated": "translated overlay in {lang_name}"}}
   ]
 }}"""
 

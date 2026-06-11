@@ -585,11 +585,18 @@ class FFmpegWrapper:
         margin_v = max(0, min(margin_v, video_height // 2))
         outline_px = 4
         shadow_px = 0
-        # Colors in ASS format: &HBBGGRR (BGR, not RGB)
-        primary_color = "&H0000FFFF"   # Yellow (cinema standard)
+        # Presets de estilo — cores em ASS &HAABBGGRR (BGR, não RGB)
+        SUB_STYLES = {
+            "cinema":   {"primary": "&H0000FFFF", "back": "&H96000000", "border_style": 3},  # amarela + caixa
+            "classica": {"primary": "&H00FFFFFF", "back": "&H96000000", "border_style": 3},  # branca + caixa
+            "limpa":    {"primary": "&H00FFFFFF", "back": "&H00000000", "border_style": 1},  # branca, só contorno
+            "dourada":  {"primary": "&H0014C8FF", "back": "&H00000000", "border_style": 1},  # dourada, só contorno
+        }
+        _st = SUB_STYLES.get(str(style).lower(), SUB_STYLES["cinema"])
+        primary_color = _st["primary"]
         outline_color = "&H00000000"   # Black outline
-        back_color = "&H96000000"      # Semi-transparent black
-        border_style = 3  # Outline + shadow
+        back_color = _st["back"]
+        border_style = _st["border_style"]
         bold = -1  # Bold
 
         header = (
