@@ -6,7 +6,7 @@
     "rootDir": "./src",
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["src/**/*", "remotion.config.ts"],
+  "include": ["src/**/*"],
   "references": [
     { "path": "../../packages/shared" }
   ]
