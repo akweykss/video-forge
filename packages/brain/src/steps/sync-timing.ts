@@ -42,7 +42,7 @@ export async function executeSyncTiming(
     let durationInSeconds = scene.durationInSeconds;
 
     // Se a cena tem timestamps de narração, usa para calcular duração precisa
-    if (scene.narrationStartMs !== undefined && scene.narrationEndMs !== undefined) {
+    if (scene.narrationStartMs != null && scene.narrationEndMs != null) {
       const narrationDuration = (scene.narrationEndMs - scene.narrationStartMs) / 1000;
       // Adiciona padding de 0.5s antes e depois da narração
       durationInSeconds = Math.max(durationInSeconds, narrationDuration + 1.0);
@@ -56,10 +56,20 @@ export async function executeSyncTiming(
       ...scene,
       assetUrl,
       durationInFrames: secondsToFrames(durationInSeconds, fps),
+      startFrame: 0, // recalculado cumulativamente abaixo
     };
 
     return resolved;
   });
+
+  // Posição inicial (em frames) de cada cena — cumulativa
+  {
+    let _cursor = 0;
+    for (const sc of resolvedScenes) {
+      sc.startFrame = _cursor;
+      _cursor += sc.durationInFrames;
+    }
+  }
 
   // Calcula duração total
   const totalDurationInFrames = resolvedScenes.reduce(

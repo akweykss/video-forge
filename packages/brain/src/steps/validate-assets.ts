@@ -74,13 +74,13 @@ export async function executeValidateAssets(
         validations.push({
           sceneId: asset.sceneId,
           passed: validation.pass,
-          score: validation.overallScore,
+          score: validation.averageScore,
           issues: validation.issues,
         });
 
-        if (validation.pass || validation.overallScore >= QUALITY_THRESHOLD) {
+        if (validation.pass || validation.averageScore >= QUALITY_THRESHOLD) {
           logger.success(
-            `Cena ${asset.sceneId}: Score ${validation.overallScore.toFixed(1)}/5.0 ✓`,
+            `Cena ${asset.sceneId}: Score ${validation.averageScore.toFixed(1)}/5.0 ✓`,
           );
           validAssets.push(currentAsset);
           passed = true;
@@ -89,7 +89,7 @@ export async function executeValidateAssets(
 
         if (attempt < MAX_REGENERATION_ATTEMPTS && scene.imagePrompt) {
           logger.warn(
-            `Cena ${asset.sceneId}: Score ${validation.overallScore.toFixed(1)}/5.0 — ` +
+            `Cena ${asset.sceneId}: Score ${validation.averageScore.toFixed(1)}/5.0 — ` +
             `Regenerando (${validation.issues.join(', ')})`,
           );
 

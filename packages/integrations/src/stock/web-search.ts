@@ -67,7 +67,7 @@ export async function searchWebImages(
       return [];
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.value || !Array.isArray(data.value)) {
       return [];
     }
@@ -111,7 +111,7 @@ export async function searchWebVideos(
 
     if (!response.ok) return [];
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.value) return [];
 
     return data.value.map((item: any) => ({

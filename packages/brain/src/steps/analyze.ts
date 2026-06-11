@@ -24,10 +24,11 @@ export async function executeAnalyze(
 
   const analysis = await analyzeContent(transcription.text, transcription.words);
 
+  const _topics = (analysis.topics ?? []).map((t: any) => t?.name ?? String(t));
   logger.success(
-    `Análise concluída: ${analysis.mainTopics.length} tópicos, mood: ${analysis.mood}`,
+    `Análise concluída: ${_topics.length} tópicos, mood: ${analysis.emotionalTone?.suggestedMood ?? '—'}`,
   );
-  logger.info(`Tópicos: ${analysis.mainTopics.join(', ')}`);
+  logger.info(`Tópicos: ${_topics.join(', ')}`);
 
   return { analysis };
 }

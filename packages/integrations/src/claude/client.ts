@@ -70,6 +70,13 @@ export interface Quote {
  * Resultado completo da análise de conteúdo.
  */
 export interface ContentAnalysis {
+  premise?: {
+    mainSubject: string;
+    category: string;
+    relatedEntities?: string[];
+    mainArgument: string;
+    searchContext: string;
+  };
   topics: Topic[];
   keyMoments: KeyMoment[];
   statistics: Statistic[];

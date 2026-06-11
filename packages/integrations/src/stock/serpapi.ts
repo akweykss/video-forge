@@ -17,6 +17,7 @@ export interface SerpImage {
   width: number;
   height: number;
   source: string;       // Source website
+  original?: string;    // Full-size original URL (alguns resultados)
   localPath?: string;
 }
 
@@ -46,7 +47,7 @@ export async function searchSerpImages(
       return [];
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.images_results || !Array.isArray(data.images_results)) {
       return [];
     }
@@ -220,7 +221,7 @@ export async function searchSerpVideos(
       return [];
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.video_results || !Array.isArray(data.video_results)) {
       return [];
     }

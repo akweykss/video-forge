@@ -10,7 +10,7 @@ import {
   generateImage,
   findBRoll,
   findImage,
-  downloadAsset,
+  downloadPexelsAsset,
 } from '@video-forge/integrations';
 import type { VideoManifest, Scene } from '@video-forge/shared';
 import { PipelineLogger } from '../utils/logger';
@@ -61,7 +61,7 @@ async function generateAssetForScene(
           logger.warn(`Cena ${scene.id}: Nenhum B-roll encontrado para "${scene.stockQuery}"`);
           return null;
         }
-        const localPath = await downloadAsset(video.url, 'videos');
+        const localPath = await downloadPexelsAsset(video.url);
         return {
           sceneId: scene.id,
           localPath,
@@ -81,7 +81,7 @@ async function generateAssetForScene(
           logger.warn(`Cena ${scene.id}: Nenhuma foto encontrada para "${scene.stockQuery}"`);
           return null;
         }
-        const localPath = await downloadAsset(photo.url, 'images');
+        const localPath = await downloadPexelsAsset(photo.url);
         return {
           sceneId: scene.id,
           localPath,

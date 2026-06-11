@@ -177,10 +177,10 @@ export async function findBRoll(query: string): Promise<UnifiedStockVideo> {
       if (serpImages.length > 0) {
         for (const img of serpImages) {
           try {
-            const localPath = await downloadSerpImage(img.original);
+            const localPath = await downloadSerpImage(img.original || img.url);
             console.log(`[Stock] ✅ B-roll SerpAPI (entity image): "${img.title}"`);
             return {
-              id: Date.now(), url: img.original, downloadUrl: img.original,
+              id: Date.now(), url: img.original || img.url, downloadUrl: img.original || img.url,
               localPath, width: img.width, height: img.height, duration: 3, source: 'pexels' as const,
             };
           } catch { continue; }

@@ -41,7 +41,7 @@ export async function searchGoogleImages(
       return [];
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!data.items || !Array.isArray(data.items)) {
       return [];
     }
