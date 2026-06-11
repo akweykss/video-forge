@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<mask id="m">
+  <rect width="512" height="512" fill="#fff"/>
+  <path d="M104 114h28l-18 40h-28z" fill="#000"/>
+  <path d="M152 114h28l-18 40h-28z" fill="#000"/>
+  <path d="M200 114h22l-14 30-22 2z" fill="#000"/>
+  <path d="M212 252l88 50-88 50z" fill="#000"/>
+</mask>
+<g mask="url(#m)" fill="#f0eee6">
+  <path d="M40 240V152c0-22.1 17.9-40 40-40h118c12.6 0 24.4 5.9 32 16l21 28h169v100H40z"/>
+  <path d="M76 176h312l84 84v112c0 19.9-16.1 36-36 36H76c-19.9 0-36-16.1-36-36V212c0-19.9 16.1-36 36-36z"/>
+</g>
+</svg>

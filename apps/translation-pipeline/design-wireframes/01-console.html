@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fold — Wireframe 01 · Console</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+:root{
+  --bg:#151412; --surface:#1d1c1a; --surface2:#252320; --raise:#2c2a27;
+  --border:#33312c; --border-soft:rgba(255,255,255,.07);
+  --text:#f0eee6; --muted:#a8a59b; --faint:#75726a;
+  --accent:#d97757; --accent-hover:#e08b6d; --accent-soft:rgba(217,119,87,.13); --accent-line:rgba(217,119,87,.4);
+  --ok:#8fb08a; --ok-soft:rgba(143,176,138,.13);
+  --warn:#e2bb4e; --warn-soft:rgba(226,187,78,.13);
+  --err:#cb6a62; --err-soft:rgba(203,106,98,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.045);
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5}
+button{font-family:var(--sans);cursor:pointer}
+svg{flex-shrink:0}
+
+/* ---------- layout: sidebar fixa (memória muscular: Claude.ai / Linear / Notion) ---------- */
+.shell{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.sidebar{background:#141311;border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 10px 18px}
+.logo-mark{width:28px;height:28px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.logo-name{font-family:var(--serif);font-size:19px;letter-spacing:.2px}
+.nav-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--muted);border:none;background:none;width:100%;text-align:left;font-size:13.5px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent)}
+.nav-item .count{margin-left:auto;font-size:11px;background:var(--surface2);color:var(--muted);border-radius:10px;padding:1px 7px}
+.sidebar-footer{margin-top:auto;border-top:1px solid var(--border-soft);padding-top:12px}
+.account{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px}
+.account:hover{background:var(--surface2)}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--raise);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+.plan{font-size:11px;color:var(--faint)}
+
+.main{padding:32px 40px;max-width:1060px;width:100%}
+.page{display:none}
+.page.visible{display:block}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
+h1{font-family:var(--serif);font-size:26px;font-weight:500;letter-spacing:.2px}
+.sub{color:var(--muted);margin-top:4px;font-size:13.5px}
+
+/* ---------- componentes ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+.card-pad{padding:22px}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:9px;padding:9px 16px;font-size:13.5px;font-weight:500;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:#141311}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-ghost{background:none;border-color:var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-danger{background:none;border-color:var(--border);color:var(--err)}
+.btn-sm{padding:6px 11px;font-size:12.5px;border-radius:7px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:7px}
+.input,.select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-size:14px;font-family:var(--sans)}
+.input:focus,.select:focus{outline:none;border-color:var(--accent-line)}
+.hint{font-size:12px;color:var(--faint);margin-top:6px}
+.row{display:flex;gap:16px}.row>*{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px}
+.chip-queue{background:var(--surface2);color:var(--muted)}
+.chip-run{background:var(--accent-soft);color:var(--accent)}
+.chip-review{background:var(--warn-soft);color:var(--warn)}
+.chip-done{background:var(--ok-soft);color:var(--ok)}
+.chip-err{background:var(--err-soft);color:var(--err)}
+.progress{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.toggle{position:relative;width:36px;height:20px;background:var(--surface2);border-radius:11px;border:1px solid var(--border);transition:.15s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:.15s}
+.toggle.on::after{left:18px;background:#141311}
+.divider{height:1px;background:var(--border-soft);margin:20px 0}
+
+/* estúdio */
+.studio-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
+.preview-stack{position:sticky;top:32px}
+.phone{aspect-ratio:9/16;max-height:430px;margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:18px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--faint)}
+.voice-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-top:8px}
+.play-dot{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;border:none}
+.slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--surface2);accent-color:var(--accent)}
+.char-pick{display:flex;gap:10px;flex-wrap:wrap}
+.char-thumb{width:64px;text-align:center;background:none;border:none;color:var(--muted);font-size:11px}
+.char-thumb .ph{width:56px;height:56px;border-radius:12px;background:var(--surface2);border:2px solid transparent;margin:0 auto 5px;display:flex;align-items:center;justify-content:center}
+.char-thumb.selected .ph{border-color:var(--accent)}
+.char-thumb.selected{color:var(--accent)}
+
+/* fila */
+.filters{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filter{background:none;border:1px solid var(--border);border-radius:20px;padding:6px 14px;color:var(--muted);font-size:12.5px}
+.filter.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.filter b{font-weight:600;margin-left:5px;opacity:.75}
+.job-list{display:flex;flex-direction:column;gap:10px}
+.job{display:grid;grid-template-columns:46px 1fr auto;gap:14px;align-items:center;padding:14px 16px;cursor:pointer}
+.job:hover{border-color:var(--accent-line)}
+.job .thumb{width:46px;height:62px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.job-title{font-weight:600;font-size:14px;margin-bottom:3px}
+.job-meta{font-size:12px;color:var(--faint);display:flex;gap:10px;align-items:center}
+.job-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:170px}
+
+/* detalhe */
+.pipeline{display:flex;align-items:center;gap:0;margin:20px 0 26px}
+.step{display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;position:relative}
+.step::before{content:"";position:absolute;top:14px;left:-50%;width:100%;height:2px;background:var(--surface2)}
+.step:first-child::before{display:none}
+.step.done::before,.step.now::before{background:var(--accent)}
+.step .dot{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--faint);z-index:1;font-size:11px}
+.step.done .dot{background:var(--accent);border-color:var(--accent);color:#141311}
+.step.now .dot{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.step span{font-size:11.5px;color:var(--faint)}
+.step.done span,.step.now span{color:var(--text)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.compare .phone{max-height:330px}
+.panel-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:8px}
+.script-line{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:13px}
+.script-line .t{color:var(--faint);font-variant-numeric:tabular-nums;font-size:12px}
+.script-line p{color:var(--text)}
+.script-line .orig{color:var(--faint);font-size:12px;margin-top:2px}
+.logs{background:#121110;border:1px solid var(--border);border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted);line-height:1.8;max-height:160px;overflow:auto}
+.logs .ok{color:var(--ok)}.logs .acc{color:var(--accent)}
+
+/* personagens / vozes */
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.char-card{padding:0;overflow:hidden;text-align:center;cursor:pointer}
+.char-card .face{aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.char-card .nm{padding:10px;font-size:13px;font-weight:600}
+.char-card .nm small{display:block;font-weight:400;color:var(--faint);font-size:11px;margin-top:2px}
+.dropzone{border:1.5px dashed var(--border);border-radius:12px;padding:34px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--faint);text-align:center}
+.dropzone:hover{border-color:var(--accent-line);color:var(--muted)}
+.voice-card{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.voice-card .info{flex:1}
+.voice-card .nm{font-weight:600;font-size:14px}
+.voice-card .ds{font-size:12px;color:var(--faint);margin-top:2px}
+.wave{display:flex;gap:2px;align-items:center;height:18px}
+.wave i{width:2.5px;background:var(--faint);border-radius:2px;display:block}
+
+/* visão geral */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{padding:18px}
+.stat .v{font-family:var(--serif);font-size:28px;margin:4px 0 2px}
+.stat .l{font-size:12px;color:var(--faint)}
+.stat .d{font-size:11.5px;color:var(--ok)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);padding:10px 14px;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border-soft);color:var(--muted)}
+td:first-child{color:var(--text);font-weight:500}
+
+.wf-banner{position:fixed;bottom:14px;right:14px;background:var(--raise);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:11.5px;color:var(--muted);z-index:50;box-shadow:var(--shadow)}
+
+/* fundo: grão de filme + vinhetas de luz (nunca 100% liso, sempre limpo) */
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(1100px 520px at 75% -120px, rgba(217,119,87,.05), transparent 60%),
+    radial-gradient(900px 700px at -150px 110%, rgba(226,187,78,.025), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-attachment:fixed;
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141311" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6c0 0-8-2-16 2V4z"/><path d="M4 12c8-4 16-2 16-2v10H4V12z" opacity=".55"/></svg>
+      </div>
+      <span class="logo-name">Fold</span>
+    </div>
+
+    <button class="nav-item" data-page="overview" onclick="go('overview',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Visão geral
+    </button>
+    <button class="nav-item active" data-page="studio" onclick="go('studio',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      Estúdio
+    </button>
+    <button class="nav-item" data-page="queue" onclick="go('queue',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>
+      Produções <span class="count">7</span>
+    </button>
+    <button class="nav-item" data-page="characters" onclick="go('characters',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Personagens
+    </button>
+    <button class="nav-item" data-page="voices" onclick="go('voices',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Vozes
+    </button>
+
+    <div class="nav-label">Workspace</div>
+    <button class="nav-item" data-page="settings" onclick="go('settings',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>
+      Ajustes
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="account">
+        <div class="avatar">AK</div>
+        <div>
+          <div style="font-size:13px">Akwe P.</div>
+          <div class="plan">Plano Studio · 41 créditos</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- ===== VISÃO GERAL ===== -->
+    <section class="page" id="page-overview">
+      <div class="page-head">
+        <div><h1>Visão geral</h1><div class="sub">Seu estúdio nos últimos 30 dias</div></div>
+        <button class="btn btn-primary" onclick="go('studio',document.querySelector('[data-page=studio]'))">Nova produção</button>
+      </div>
+      <div class="stats">
+        <div class="card stat"><div class="l">Vídeos produzidos</div><div class="v">128</div><div class="d">+22 esta semana</div></div>
+        <div class="card stat"><div class="l">Em produção agora</div><div class="v">3</div><div class="d">&nbsp;</div></div>
+        <div class="card stat"><div class="l">Aguardando revisão</div><div class="v">2</div><div class="d" style="color:var(--warn)">ação necessária</div></div>
+        <div class="card stat"><div class="l">Tempo médio</div><div class="v">2m48s</div><div class="d">da URL ao master</div></div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Produção</th><th>Status</th><th>Voz</th><th>Duração</th><th>Concluída</th></tr></thead>
+          <tbody>
+            <tr><td>Receita de lámen em 60s</td><td><span class="chip chip-done">Pronto</span></td><td>Apresentadora</td><td>0:58</td><td>há 2 h</td></tr>
+            <tr><td>Rotina de treino do monge</td><td><span class="chip chip-run">Em produção</span></td><td>Narrador grave</td><td>1:12</td><td>—</td></tr>
+            <tr><td>Gadget de cozinha viral</td><td><span class="chip chip-review">Revisão</span></td><td>Apresentador</td><td>0:43</td><td>—</td></tr>
+            <tr><td>História do bilionário</td><td><span class="chip chip-done">Pronto</span></td><td>Narradora suave</td><td>1:30</td><td>ontem</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== ESTÚDIO (nova produção) ===== -->
+    <section class="page visible" id="page-studio">
+      <div class="page-head">
+        <div><h1>Estúdio</h1><div class="sub">Cole o link, ajuste o acabamento e o Fold produz o vídeo pronto para postar.</div></div>
+      </div>
+
+      <div class="studio-grid">
+        <div class="card card-pad">
+          <div class="field">
+            <label>Link do vídeo</label>
+            <input class="input" placeholder="https://v.douyin.com/…" value="https://v.douyin.com/iJxK2mQa/">
+            <div class="hint">Douyin e TikTok · até 5 links de uma vez para produção em lote</div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Idioma de saída</label>
+              <select class="select"><option>Português (Brasil)</option><option>Español</option><option>English</option></select>
+            </div>
+            <div class="field">
+              <label>Formato</label>
+              <select class="select"><option>Reels / TikTok / Shorts (9:16)</option></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Voz da narração</label>
+            <select class="select"><option>Apresentadora — natural, energética</option><option>Narrador grave</option><option>Narradora suave</option><option>Jovem dinâmico</option></select>
+            <div class="voice-row">
+              <button class="play-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+              <div style="flex:1">
+                <div style="font-size:12.5px;font-weight:600">Prévia — Apresentadora</div>
+                <div style="font-size:11px;color:var(--faint)">"Olá! Este é um teste da voz selecionada."</div>
+              </div>
+              <div class="wave"><i style="height:6px"></i><i style="height:12px"></i><i style="height:16px"></i><i style="height:9px"></i><i style="height:14px"></i><i style="height:5px"></i><i style="height:11px"></i></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Personagem (lip sync) — opcional</label>
+            <div class="char-pick">
+              <button class="char-thumb selected"><div class="ph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>Nenhum</button>
+              <button class="char-thumb"><div class="ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Li Wei</button>
+              <button class="char-thumb"><div class="ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Chen Mei</button>
+              <button class="char-thumb"><div class="ph" style="border-style:dashed;border-color:var(--border)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>Novo</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <div class="field">
+              <label>Textura de filme</label>
+              <select class="select"><option>Sutil</option><option>Nenhuma</option><option>Média</option><option>Forte</option></select>
+            </div>
+            <div class="field">
+              <label>Color grade cinematográfico — 50%</label>
+              <input type="range" class="slider" value="50">
+            </div>
+          </div>
+
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div>
+              <div style="font-weight:600;font-size:13.5px">Limpar marca d'água e textos originais</div>
+              <div class="hint" style="margin-top:2px">Remove sobreposições do vídeo de origem antes do acabamento</div>
+            </div>
+            <div class="toggle on"></div>
+          </div>
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:600;font-size:13px">Revisar roteiro antes do master</div>
+              <div class="hint" style="margin-top:1px">A produção pausa para você aprovar o texto; desligado, vai direto ao vídeo final</div>
+            </div>
+            <div class="toggle on"></div>
+          </div>
+
+          <div class="divider"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="6 3 20 12 6 21 6 3" fill="currentColor"/></svg>
+            Produzir vídeo
+          </button>
+          <div class="hint" style="text-align:center;margin-top:8px">~3 minutos · consome 1 crédito</div>
+        </div>
+
+        <div class="preview-stack">
+          <div class="card card-pad">
+            <div class="panel-label">Resultado</div>
+            <div class="phone">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor"/></svg>
+              <span style="font-size:12px;max-width:170px;text-align:center">Legendas em amarelo cinema, narração nova e color grade aplicados aqui</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PRODUÇÕES (fila) ===== -->
+    <section class="page" id="page-queue">
+      <div class="page-head">
+        <div><h1>Produções</h1><div class="sub">7 produções · 2 aguardando sua revisão</div></div>
+        <button class="btn btn-primary" onclick="go('studio',document.querySelector('[data-page=studio]'))">Nova produção</button>
+      </div>
+
+      <div class="filters">
+        <button class="filter active">Todas <b>7</b></button>
+        <button class="filter">Na fila <b>1</b></button>
+        <button class="filter">Em produção <b>2</b></button>
+        <button class="filter">Revisão <b>2</b></button>
+        <button class="filter">Prontas <b>1</b></button>
+        <button class="filter">Falhas <b>1</b></button>
+      </div>
+
+      <div class="job-list">
+        <div class="card job" onclick="go('detail',null)">
+          <div class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+          <div>
+            <div class="job-title">Gadget de cozinha viral</div>
+            <div class="job-meta"><span>douyin.com/iJxK2mQa</span><span>·</span><span>0:43</span><span>·</span><span>Apresentador</span></div>
+          </div>
+          <div class="job-right">
+            <span class="chip chip-review">Aguardando revisão</span>
+            <span style="font-size:11.5px;color:var(--faint)">roteiro pronto para aprovar</span>
+          </div>
+        </div>
+
+        <div class="card job" onclick="go('detail',null)">
+          <div class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+          <div>
+            <div class="job-title">Rotina de treino do monge</div>
+            <div class="job-meta"><span>douyin.com/mN8pQr2</span><span>·</span><span>1:12</span><span>·</span><span>Narrador grave</span></div>
+          </div>
+          <div class="job-right">
+            <span class="chip chip-run">Narração · 64%</span>
+            <div class="progress" style="width:170px"><i style="width:64%"></i></div>
+          </div>
+        </div>
+
+        <div class="card job" onclick="go('detail',null)">
+          <div class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+          <div>
+            <div class="job-title">Decoração minimalista 12m²</div>
+            <div class="job-meta"><span>douyin.com/xT5wYn9</span><span>·</span><span>0:51</span><span>·</span><span>Narradora suave</span></div>
+          </div>
+          <div class="job-right">
+            <span class="chip chip-run">Limpeza · 31%</span>
+            <div class="progress" style="width:170px"><i style="width:31%"></i></div>
+          </div>
+        </div>
+
+        <div class="card job" onclick="go('detail',null)">
+          <div class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+          <div>
+            <div class="job-title">Receita de lámen em 60s</div>
+            <div class="job-meta"><span>douyin.com/aB3cDe1</span><span>·</span><span>0:58</span><span>·</span><span>Apresentadora</span></div>
+          </div>
+          <div class="job-right">
+            <span class="chip chip-done">Pronto</span>
+            <button class="btn btn-ghost btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+              Baixar master
+            </button>
+          </div>
+        </div>
+
+        <div class="card job" onclick="go('detail',null)">
+          <div class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+          <div>
+            <div class="job-title">Café da manhã de Chengdu</div>
+            <div class="job-meta"><span>douyin.com/qW7eRt4</span><span>·</span><span>1:04</span></div>
+          </div>
+          <div class="job-right">
+            <span class="chip chip-err">Falha na captura</span>
+            <button class="btn btn-ghost btn-sm">Tentar de novo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== DETALHE DA PRODUÇÃO ===== -->
+    <section class="page" id="page-detail">
+      <div class="page-head">
+        <div>
+          <button class="btn btn-ghost btn-sm" style="margin-bottom:12px" onclick="go('queue',document.querySelector('[data-page=queue]'))">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
+            Produções
+          </button>
+          <h1>Gadget de cozinha viral</h1>
+          <div class="sub">douyin.com/iJxK2mQa · enviado há 4 min · Apresentador · color grade 50%</div>
+        </div>
+        <span class="chip chip-review" style="font-size:12.5px;padding:6px 13px">Aguardando revisão</span>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:18px">
+        <div class="pipeline">
+          <div class="step done"><div class="dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg></div><span>Captura</span></div>
+          <div class="step done"><div class="dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg></div><span>Limpeza</span></div>
+          <div class="step now"><div class="dot">3</div><span>Narração</span></div>
+          <div class="step"><div class="dot">4</div><span>Legendas</span></div>
+          <div class="step"><div class="dot">5</div><span>Master</span></div>
+        </div>
+
+        <div class="panel-label">Roteiro adaptado — revise antes de finalizar</div>
+        <div style="margin-bottom:16px">
+          <div class="script-line"><span class="t">0:00</span><div><p>Esse mini processador corta qualquer legume em três segundos.</p><div class="orig">这个迷你处理器三秒钟就能切好任何蔬菜</div></div></div>
+          <div class="script-line"><span class="t">0:06</span><div><p>Olha o tamanho dele — cabe na palma da mão.</p><div class="orig">看看它的大小，可以放在手掌上</div></div></div>
+          <div class="script-line"><span class="t">0:11</span><div><p>E o melhor: lava na máquina sem desmontar nada.</p><div class="orig">最好的是：不用拆就能放进洗碗机</div></div></div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg>
+            Aprovar e finalizar
+          </button>
+          <button class="btn btn-ghost">Editar roteiro</button>
+          <button class="btn btn-ghost">Refazer narração</button>
+          <button class="btn btn-ghost">Refazer lip sync</button>
+          <button class="btn btn-danger">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="compare" style="margin-bottom:18px">
+        <div class="card card-pad">
+          <div class="panel-label">Original</div>
+          <div class="phone"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" opacity=".4"><polygon points="8 5 19 12 8 19 8 5"/></svg><span style="font-size:11.5px">áudio e textos originais</span></div>
+        </div>
+        <div class="card card-pad">
+          <div class="panel-label" style="color:var(--accent)">Produção Fold</div>
+          <div class="phone" style="border-color:var(--accent-line)"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" opacity=".7"><polygon points="8 5 19 12 8 19 8 5"/></svg><span style="font-size:11.5px">narração nova · legendas cinema · grade</span></div>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <div class="panel-label">Bastidores da produção</div>
+        <div class="logs">
+          <div><span class="ok">✓</span> Captura concluída — 1080×1920, 43s</div>
+          <div><span class="ok">✓</span> Limpeza — marca d'água e 14 blocos de texto removidos</div>
+          <div><span class="acc">▸</span> Narração — sincronizando 12 segmentos de áudio…</div>
+          <div>&nbsp;&nbsp;aguardando aprovação do roteiro</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PERSONAGENS ===== -->
+    <section class="page" id="page-characters">
+      <div class="page-head">
+        <div><h1>Personagens</h1><div class="sub">Rostos que narram suas produções com lip sync</div></div>
+        <button class="btn btn-primary">Adicionar personagem</button>
+      </div>
+      <div class="grid-cards" style="margin-bottom:18px">
+        <div class="card char-card">
+          <div class="face"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+          <div class="nm">Li Wei<small>usado em 34 produções</small></div>
+        </div>
+        <div class="card char-card">
+          <div class="face"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+          <div class="nm">Chen Mei<small>usado em 12 produções</small></div>
+        </div>
+        <div class="card char-card">
+          <div class="face"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+          <div class="nm">Apresentador BR<small>usado em 8 produções</small></div>
+        </div>
+      </div>
+      <div class="card card-pad">
+        <div class="panel-label">Novo personagem</div>
+        <div class="dropzone">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></svg>
+          <div><b style="color:var(--text)">Arraste um vídeo ou foto</b> ou clique para escolher</div>
+          <div style="font-size:11.5px">MP4, MOV, WEBM ou imagem · rosto visível e bem iluminado</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="field" style="margin:0"><label>Nome do personagem</label><input class="input" placeholder="Ex.: Li Wei, Chen Mei…"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%;justify-content:center">Salvar personagem</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== VOZES ===== -->
+    <section class="page" id="page-voices">
+      <div class="page-head">
+        <div><h1>Vozes</h1><div class="sub">Ouça e defina a voz padrão das suas produções</div></div>
+      </div>
+      <div class="job-list">
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Apresentadora</div><div class="ds">Feminina · natural e energética · ideal para produtos e receitas</div></div>
+          <span class="chip chip-run">Padrão</span>
+        </div>
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Narrador grave</div><div class="ds">Masculina · profunda · ideal para histórias e curiosidades</div></div>
+          <button class="btn btn-ghost btn-sm">Definir padrão</button>
+        </div>
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Narradora suave</div><div class="ds">Feminina · calma · ideal para lifestyle e decoração</div></div>
+          <button class="btn btn-ghost btn-sm">Definir padrão</button>
+        </div>
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Jovem dinâmico</div><div class="ds">Masculina · rápida · ideal para humor e trends</div></div>
+          <button class="btn btn-ghost btn-sm">Definir padrão</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== AJUSTES ===== -->
+    <section class="page" id="page-settings">
+      <div class="page-head"><div><h1>Ajustes</h1><div class="sub">Preferências do site e da sua conta</div></div></div>
+      <div class="card card-pad" style="max-width:560px">
+        <div class="field">
+          <label>Tema</label>
+          <div style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px">
+            <button class="btn btn-sm" style="background:var(--raise);color:var(--text);border:none">Escuro</button>
+            <button class="btn btn-sm" style="background:none;color:var(--muted);border:none">Claro</button>
+            <button class="btn btn-sm" style="background:none;color:var(--muted);border:none">Sistema</button>
+          </div>
+        </div>
+        <div class="field"><label>Idioma da interface</label><select class="select"><option>Português (Brasil)</option><option>English</option><option>Español</option></select></div>
+        <div class="divider"></div>
+        <div class="panel-label">Notificações</div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:600;font-size:13px">Avisar quando uma produção ficar pronta</div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:600;font-size:13px">Avisar quando um roteiro pedir revisão</div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="panel-label">Conta</div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <div style="font-weight:600;font-size:13px">akwe@fold.studio</div>
+            <div class="hint" style="margin-top:1px">Plano Studio · 41 créditos restantes</div>
+          </div>
+          <button class="btn btn-ghost btn-sm">Gerenciar assinatura</button>
+        </div>
+        <div class="divider"></div>
+        <button class="btn btn-primary">Salvar ajustes</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="wf-banner">Wireframe 01 · Console — navegação lateral fixa</div>
+
+<script>
+function go(page, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('visible'));
+  document.getElementById('page-'+page).classList.add('visible');
+  if(page==='detail') btn = document.querySelector('[data-page=queue]');
+  if(btn){
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.toggle').forEach(t=>t.addEventListener('click',()=>t.classList.toggle('on')));
+document.querySelectorAll('.filter').forEach(f=>f.addEventListener('click',e=>{
+  document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));
+  f.classList.add('active');
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fold — Wireframe 04 · Caixa de produção</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+:root{
+  --bg:#151412; --surface:#1d1c1a; --surface2:#252320; --raise:#2c2a27;
+  --border:#33312c; --border-soft:rgba(255,255,255,.07);
+  --text:#f0eee6; --muted:#a8a59b; --faint:#75726a;
+  --accent:#d97757; --accent-hover:#e08b6d; --accent-soft:rgba(217,119,87,.13); --accent-line:rgba(217,119,87,.4);
+  --ok:#8fb08a; --ok-soft:rgba(143,176,138,.13);
+  --warn:#e2bb4e; --warn-soft:rgba(226,187,78,.13);
+  --err:#cb6a62; --err-soft:rgba(203,106,98,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.045);
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;overflow:hidden}
+button{font-family:var(--sans);cursor:pointer}
+svg{flex-shrink:0}
+
+/* ---------- layout: 3 painéis (memória muscular: Mail / Outlook / Slack) ---------- */
+.shell{display:grid;grid-template-columns:64px 340px 1fr;height:100vh}
+
+/* trilho de ícones */
+.rail{background:#141311;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px}
+.rail .logo-mark{width:32px;height:32px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.rbtn{width:42px;height:42px;border-radius:10px;border:none;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;position:relative}
+.rbtn:hover{background:var(--surface2);color:var(--text)}
+.rbtn.active{background:var(--accent-soft);color:var(--accent)}
+.rbtn .bdg{position:absolute;top:5px;right:5px;min-width:15px;height:15px;border-radius:8px;background:var(--accent);color:#141311;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.rail .spacer{flex:1}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--raise);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+
+/* lista (coluna do meio) */
+.list-pane{border-right:1px solid var(--border);background:#1b1a18;display:flex;flex-direction:column;overflow:hidden}
+.list-head{padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.list-head h1{font-family:var(--serif);font-size:19px;font-weight:500}
+.list-head .sub{font-size:12px;color:var(--faint);margin-top:2px}
+.searchbar{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px 11px;margin-top:12px;color:var(--faint);font-size:12.5px}
+.filters{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.filter{background:none;border:1px solid var(--border);border-radius:16px;padding:4px 11px;color:var(--muted);font-size:11.5px;cursor:pointer}
+.filter.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.items{overflow-y:auto;flex:1}
+.item{padding:14px 16px;border-bottom:1px solid var(--border-soft);cursor:pointer;display:grid;grid-template-columns:38px 1fr;gap:12px}
+.item:hover{background:var(--surface)}
+.item.selected{background:var(--surface);box-shadow:inset 3px 0 0 var(--accent)}
+.item .thumb{width:38px;height:50px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.item .nm{font-weight:600;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+.item .nm time{font-weight:400;font-size:10.5px;color:var(--faint);white-space:nowrap}
+.item .mt{font-size:11.5px;color:var(--faint);margin:2px 0 6px}
+.list-foot{padding:12px 16px;border-top:1px solid var(--border)}
+
+/* painel de leitura */
+.read-pane{overflow-y:auto;padding:28px 34px}
+.view{display:none}
+.view.visible{display:block}
+h2{font-family:var(--serif);font-size:23px;font-weight:500}
+.sub{color:var(--muted);font-size:13px;margin-top:3px}
+
+/* componentes */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+.card-pad{padding:20px}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:9px;padding:9px 16px;font-size:13.5px;font-weight:500;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:#141311}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-ghost{background:none;border-color:var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-danger{background:none;border-color:var(--border);color:var(--err)}
+.btn-sm{padding:6px 11px;font-size:12.5px;border-radius:7px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.input,.select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;font-family:var(--sans)}
+.input:focus,.select:focus{outline:none;border-color:var(--accent-line)}
+.hint{font-size:11.5px;color:var(--faint);margin-top:5px}
+.row{display:flex;gap:14px}.row>*{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.chip-queue{background:var(--surface2);color:var(--muted)}
+.chip-run{background:var(--accent-soft);color:var(--accent)}
+.chip-review{background:var(--warn-soft);color:var(--warn)}
+.chip-done{background:var(--ok-soft);color:var(--ok)}
+.chip-err{background:var(--err-soft);color:var(--err)}
+.progress{height:4px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.toggle{position:relative;width:36px;height:20px;background:var(--surface2);border-radius:11px;border:1px solid var(--border);transition:.15s;cursor:pointer;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:.15s}
+.toggle.on::after{left:18px;background:#141311}
+.divider{height:1px;background:var(--border-soft);margin:18px 0}
+.panel-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);margin-bottom:8px}
+.slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--surface2);accent-color:var(--accent)}
+.play-dot{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;border:none}
+.wave{display:flex;gap:2px;align-items:center;height:16px}
+.wave i{width:2.5px;background:var(--faint);border-radius:2px;display:block}
+.voice-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;margin-top:7px}
+.char-pick{display:flex;gap:9px;flex-wrap:wrap}
+.char-thumb{width:60px;text-align:center;background:none;border:none;color:var(--muted);font-size:10.5px}
+.char-thumb .ph{width:52px;height:52px;border-radius:11px;background:var(--surface2);border:2px solid transparent;margin:0 auto 4px;display:flex;align-items:center;justify-content:center}
+.char-thumb.selected .ph{border-color:var(--accent)}
+.char-thumb.selected{color:var(--accent)}
+.phone{aspect-ratio:9/16;background:var(--bg);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--faint)}
+
+.pipeline{display:flex;align-items:center;margin:18px 0 22px}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
+.step::before{content:"";position:absolute;top:13px;left:-50%;width:100%;height:2px;background:var(--surface2)}
+.step:first-child::before{display:none}
+.step.done::before,.step.now::before{background:var(--accent)}
+.step .dot{width:26px;height:26px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--faint);z-index:1;font-size:10.5px}
+.step.done .dot{background:var(--accent);border-color:var(--accent);color:#141311}
+.step.now .dot{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.step span{font-size:10.5px;color:var(--faint)}
+.step.done span,.step.now span{color:var(--text)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.compare .phone{max-height:270px}
+.script-line{display:grid;grid-template-columns:48px 1fr;gap:11px;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:13px}
+.script-line .t{color:var(--faint);font-variant-numeric:tabular-nums;font-size:11.5px}
+.script-line .orig{color:var(--faint);font-size:11.5px;margin-top:2px}
+.logs{background:#121110;border:1px solid var(--border);border-radius:9px;padding:13px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--muted);line-height:1.75}
+.logs .ok{color:var(--ok)}.logs .acc{color:var(--accent)}
+
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
+.char-card{padding:0;overflow:hidden;text-align:center;cursor:pointer}
+.char-card .face{aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.char-card .nm{padding:9px;font-size:12.5px;font-weight:600}
+.char-card .nm small{display:block;font-weight:400;color:var(--faint);font-size:10.5px;margin-top:2px}
+.dropzone{border:1.5px dashed var(--border);border-radius:12px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--faint);text-align:center}
+.dropzone:hover{border-color:var(--accent-line);color:var(--muted)}
+.voice-card{display:flex;align-items:center;gap:13px;padding:13px 15px;margin-bottom:9px}
+.voice-card .info{flex:1}
+.voice-card .nm{font-weight:600;font-size:13.5px}
+.voice-card .ds{font-size:11.5px;color:var(--faint);margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{padding:15px}
+.stat .v{font-family:var(--serif);font-size:24px;margin:3px 0 1px}
+.stat .l{font-size:11.5px;color:var(--faint)}
+
+.wf-banner{position:fixed;bottom:14px;right:14px;background:var(--raise);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:11.5px;color:var(--muted);z-index:50;box-shadow:var(--shadow)}
+
+/* fundo: grão de filme + vinhetas de luz (nunca 100% liso, sempre limpo) */
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(1100px 520px at 75% -120px, rgba(217,119,87,.05), transparent 60%),
+    radial-gradient(900px 700px at -150px 110%, rgba(226,187,78,.025), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-attachment:fixed;
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ============ TRILHO ============ -->
+  <nav class="rail">
+    <div class="logo-mark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#141311" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6c0 0-8-2-16 2V4z"/><path d="M4 12c8-4 16-2 16-2v10H4V12z" opacity=".55"/></svg>
+    </div>
+    <button class="rbtn active" data-view="productions" onclick="go('productions',this)" title="Produções">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="3"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"/></svg>
+      <span class="bdg">2</span>
+    </button>
+    <button class="rbtn" data-view="new" onclick="go('new',this)" title="Nova produção">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    </button>
+    <button class="rbtn" data-view="characters" onclick="go('characters',this)" title="Personagens">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+    </button>
+    <button class="rbtn" data-view="voices" onclick="go('voices',this)" title="Vozes">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </button>
+    <button class="rbtn" data-view="settings" onclick="go('settings',this)" title="Ajustes">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>
+    </button>
+    <div class="spacer"></div>
+    <div class="avatar">AK</div>
+  </nav>
+
+  <!-- ============ LISTA ============ -->
+  <aside class="list-pane">
+    <div class="list-head">
+      <h1>Produções</h1>
+      <div class="sub">7 produções · 41 créditos restantes</div>
+      <div class="searchbar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>
+        Buscar produção…
+      </div>
+    </div>
+    <div class="filters">
+      <button class="filter active">Todas 7</button>
+      <button class="filter">Produzindo 2</button>
+      <button class="filter">Revisão 2</button>
+      <button class="filter">Prontas 1</button>
+      <button class="filter">Falhas 1</button>
+    </div>
+    <div class="items">
+      <div class="item selected" onclick="selectItem(this)">
+        <div class="thumb"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+        <div>
+          <div class="nm">Gadget de cozinha viral <time>há 4 min</time></div>
+          <div class="mt">0:43 · Apresentador</div>
+          <span class="chip chip-review">Aguardando revisão</span>
+        </div>
+      </div>
+      <div class="item" onclick="selectItem(this)">
+        <div class="thumb"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+        <div>
+          <div class="nm">Rotina de treino do monge <time>agora</time></div>
+          <div class="mt">1:12 · Narrador grave</div>
+          <span class="chip chip-run">Narração · 64%</span>
+          <div class="progress" style="margin-top:7px"><i style="width:64%"></i></div>
+        </div>
+      </div>
+      <div class="item" onclick="selectItem(this)">
+        <div class="thumb"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+        <div>
+          <div class="nm">Decoração minimalista 12m² <time>agora</time></div>
+          <div class="mt">0:51 · Narradora suave</div>
+          <span class="chip chip-run">Limpeza · 31%</span>
+          <div class="progress" style="margin-top:7px"><i style="width:31%"></i></div>
+        </div>
+      </div>
+      <div class="item" onclick="selectItem(this)">
+        <div class="thumb"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+        <div>
+          <div class="nm">Receita de lámen em 60s <time>há 2 h</time></div>
+          <div class="mt">0:58 · Apresentadora</div>
+          <span class="chip chip-done">Pronto</span>
+        </div>
+      </div>
+      <div class="item" onclick="selectItem(this)">
+        <div class="thumb"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+        <div>
+          <div class="nm">Mercado noturno de Xi'an <time>há 6 min</time></div>
+          <div class="mt">1:21 · Apresentadora</div>
+          <span class="chip chip-queue">Na fila · posição 1</span>
+        </div>
+      </div>
+      <div class="item" onclick="selectItem(this)">
+        <div class="thumb"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg></div>
+        <div>
+          <div class="nm">Café da manhã de Chengdu <time>ontem</time></div>
+          <div class="mt">falha na captura</div>
+          <span class="chip chip-err">Falha</span>
+        </div>
+      </div>
+    </div>
+    <div class="list-foot">
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="go('new',document.querySelector('[data-view=new]'))">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nova produção
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ PAINEL DE LEITURA ============ -->
+  <main class="read-pane">
+
+    <!-- ===== DETALHE DA PRODUÇÃO ===== -->
+    <section class="view visible" id="view-productions">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <h2>Gadget de cozinha viral</h2>
+          <div class="sub">douyin.com/iJxK2mQa · enviado há 4 min · Apresentador · color grade 50%</div>
+        </div>
+        <span class="chip chip-review" style="font-size:12px;padding:5px 12px;white-space:nowrap">Aguardando revisão</span>
+      </div>
+
+      <div class="pipeline">
+        <div class="step done"><div class="dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg></div><span>Captura</span></div>
+        <div class="step done"><div class="dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg></div><span>Limpeza</span></div>
+        <div class="step now"><div class="dot">3</div><span>Narração</span></div>
+        <div class="step"><div class="dot">4</div><span>Legendas</span></div>
+        <div class="step"><div class="dot">5</div><span>Master</span></div>
+      </div>
+
+      <div class="compare">
+        <div class="card card-pad">
+          <div class="panel-label">Original</div>
+          <div class="phone"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" opacity=".4"><polygon points="8 5 19 12 8 19 8 5"/></svg><span style="font-size:11px">áudio e textos originais</span></div>
+        </div>
+        <div class="card card-pad">
+          <div class="panel-label" style="color:var(--accent)">Produção Fold</div>
+          <div class="phone" style="border-color:var(--accent-line)"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" opacity=".7"><polygon points="8 5 19 12 8 19 8 5"/></svg><span style="font-size:11px">narração nova · legendas cinema</span></div>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:16px">
+        <div class="panel-label">Roteiro adaptado — revise antes de finalizar</div>
+        <div class="script-line"><span class="t">0:00</span><div><p>Esse mini processador corta qualquer legume em três segundos.</p><div class="orig">这个迷你处理器三秒钟就能切好任何蔬菜</div></div></div>
+        <div class="script-line"><span class="t">0:06</span><div><p>Olha o tamanho dele — cabe na palma da mão.</p><div class="orig">看看它的大小，可以放在手掌上</div></div></div>
+        <div class="script-line"><span class="t">0:11</span><div><p>E o melhor: lava na máquina sem desmontar nada.</p><div class="orig">最好的是：不用拆就能放进洗碗机</div></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg>
+            Aprovar e finalizar
+          </button>
+          <button class="btn btn-ghost">Editar roteiro</button>
+          <button class="btn btn-ghost">Refazer narração</button>
+          <button class="btn btn-ghost">Refazer lip sync</button>
+          <button class="btn btn-ghost">Baixar master</button>
+          <button class="btn btn-danger">Excluir</button>
+        </div>
+      </div>
+
+      <div class="panel-label">Bastidores da produção</div>
+      <div class="logs">
+        <div><span class="ok">✓</span> Captura concluída — 1080×1920, 43s</div>
+        <div><span class="ok">✓</span> Limpeza — marca d'água e 14 blocos de texto removidos</div>
+        <div><span class="acc">▸</span> Narração — sincronizando 12 segmentos de áudio…</div>
+        <div>&nbsp;&nbsp;aguardando aprovação do roteiro</div>
+      </div>
+    </section>
+
+    <!-- ===== NOVA PRODUÇÃO ===== -->
+    <section class="view" id="view-new">
+      <h2>Nova produção</h2>
+      <div class="sub" style="margin-bottom:22px">Cole o link, ajuste o acabamento e o Fold entrega pronto para postar.</div>
+      <div class="card card-pad" style="max-width:620px">
+        <div class="field">
+          <label>Link do vídeo</label>
+          <input class="input" placeholder="https://v.douyin.com/…">
+          <div class="hint">Douyin e TikTok · até 5 links de uma vez</div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Idioma</label><select class="select"><option>Português (BR)</option></select></div>
+          <div class="field"><label>Formato</label><select class="select"><option>9:16</option></select></div>
+        </div>
+        <div class="field">
+          <label>Voz da narração</label>
+          <select class="select"><option>Apresentadora</option><option>Narrador grave</option><option>Narradora suave</option><option>Jovem dinâmico</option></select>
+          <div class="voice-row">
+            <button class="play-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:600">Prévia — Apresentadora</div>
+              <div style="font-size:10.5px;color:var(--faint)">"Olá! Este é um teste da voz."</div>
+            </div>
+            <div class="wave"><i style="height:5px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Personagem (lip sync)</label>
+          <div class="char-pick">
+            <button class="char-thumb selected"><div class="ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>Nenhum</button>
+            <button class="char-thumb"><div class="ph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Li Wei</button>
+            <button class="char-thumb"><div class="ph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>Chen Mei</button>
+            <button class="char-thumb"><div class="ph" style="border:2px dashed var(--border)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>Novo</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="field"><label>Textura de filme</label><select class="select"><option>Sutil</option></select></div>
+          <div class="field"><label>Color grade — 50%</label><input type="range" class="slider" value="50" style="margin-top:12px"></div>
+        </div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-weight:600;font-size:13px">Limpar marca d'água e textos</div>
+            <div class="hint" style="margin-top:1px">Remove sobreposições do original</div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:600;font-size:13px">Revisar roteiro antes do master</div>
+              <div class="hint" style="margin-top:1px">A produção pausa para você aprovar o texto; desligado, vai direto ao vídeo final</div>
+            </div>
+            <div class="toggle on"></div>
+          </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          Produzir vídeo
+        </button>
+        <div class="hint" style="text-align:center;margin-top:8px">~3 minutos · consome 1 crédito</div>
+      </div>
+    </section>
+
+    <!-- ===== PERSONAGENS ===== -->
+    <section class="view" id="view-characters">
+      <h2>Personagens</h2>
+      <div class="sub" style="margin-bottom:20px">Rostos que narram suas produções com lip sync</div>
+      <div class="grid-cards" style="margin-bottom:16px;max-width:700px">
+        <div class="card char-card"><div class="face"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div><div class="nm">Li Wei<small>34 produções</small></div></div>
+        <div class="card char-card"><div class="face"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div><div class="nm">Chen Mei<small>12 produções</small></div></div>
+        <div class="card char-card"><div class="face"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div><div class="nm">Apresentador BR<small>8 produções</small></div></div>
+      </div>
+      <div class="card card-pad" style="max-width:700px">
+        <div class="panel-label">Novo personagem</div>
+        <div class="dropzone">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></svg>
+          <div><b style="color:var(--text)">Arraste um vídeo ou foto</b> ou clique para escolher</div>
+          <div style="font-size:11px">MP4, MOV, WEBM ou imagem · rosto visível e bem iluminado</div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="field" style="margin:0"><label>Nome do personagem</label><input class="input" placeholder="Ex.: Li Wei, Chen Mei…"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%;justify-content:center">Salvar</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== VOZES ===== -->
+    <section class="view" id="view-voices">
+      <h2>Vozes</h2>
+      <div class="sub" style="margin-bottom:20px">Ouça e defina a voz padrão das suas produções</div>
+      <div style="max-width:640px">
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Apresentadora</div><div class="ds">Feminina · natural e energética · produtos e receitas</div></div>
+          <span class="chip chip-run">Padrão</span>
+        </div>
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Narrador grave</div><div class="ds">Masculina · profunda · histórias e curiosidades</div></div>
+          <button class="btn btn-ghost btn-sm">Definir padrão</button>
+        </div>
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Narradora suave</div><div class="ds">Feminina · calma · lifestyle e decoração</div></div>
+          <button class="btn btn-ghost btn-sm">Definir padrão</button>
+        </div>
+        <div class="card voice-card">
+          <button class="play-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+          <div class="info"><div class="nm">Jovem dinâmico</div><div class="ds">Masculina · rápida · humor e trends</div></div>
+          <button class="btn btn-ghost btn-sm">Definir padrão</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== AJUSTES ===== -->
+    <section class="view" id="view-settings">
+      <h2>Ajustes</h2>
+      <div class="sub" style="margin-bottom:20px">Preferências do site e desempenho recente</div>
+      <div class="stats" style="max-width:760px">
+        <div class="card stat"><div class="l">Vídeos produzidos</div><div class="v">128</div></div>
+        <div class="card stat"><div class="l">Em produção</div><div class="v">3</div></div>
+        <div class="card stat"><div class="l">Aguardando revisão</div><div class="v">2</div></div>
+        <div class="card stat"><div class="l">Tempo médio</div><div class="v">2m48s</div></div>
+      </div>
+      <div class="card card-pad" style="max-width:540px">
+        <div class="field">
+          <label>Tema</label>
+          <div style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px">
+            <button class="btn btn-sm" style="background:var(--raise);color:var(--text);border:none">Escuro</button>
+            <button class="btn btn-sm" style="background:none;color:var(--muted);border:none">Claro</button>
+            <button class="btn btn-sm" style="background:none;color:var(--muted);border:none">Sistema</button>
+          </div>
+        </div>
+        <div class="field"><label>Idioma da interface</label><select class="select"><option>Português (Brasil)</option><option>English</option><option>Español</option></select></div>
+        <div class="divider"></div>
+        <div class="panel-label">Notificações</div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:600;font-size:13px">Avisar quando uma produção ficar pronta</div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:600;font-size:13px">Avisar quando um roteiro pedir revisão</div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="panel-label">Conta</div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <div style="font-weight:600;font-size:13px">akwe@fold.studio</div>
+            <div class="hint" style="margin-top:1px">Plano Studio · 41 créditos restantes</div>
+          </div>
+          <button class="btn btn-ghost btn-sm">Gerenciar assinatura</button>
+        </div>
+        <div class="divider"></div>
+        <button class="btn btn-primary">Salvar ajustes</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="wf-banner">Wireframe 04 · Caixa de produção — três painéis estilo e-mail</div>
+
+<script>
+function go(view, btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('visible'));
+  document.getElementById('view-'+view).classList.add('visible');
+  document.querySelectorAll('.rbtn').forEach(r=>r.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+function selectItem(el){
+  document.querySelectorAll('.item').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+  go('productions', document.querySelector('[data-view=productions]'));
+}
+document.querySelectorAll('.toggle').forEach(t=>t.addEventListener('click',()=>t.classList.toggle('on')));
+document.querySelectorAll('.filter').forEach(f=>f.addEventListener('click',()=>{
+  document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));
+  f.classList.add('active');
+}));
+</script>
+</body>
+</html>

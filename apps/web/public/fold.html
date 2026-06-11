@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fold Videos — Estúdio</title>
+<link rel="icon" type="image/svg+xml" href="fold-logo.svg">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+:root{
+  --bg:#181817; --surface:#211f1e; --surface2:#292726; --raise:#312f2d;
+  --border:#383634; --border-soft:rgba(255,255,255,.07);
+  --link:#88a9d6; --link-soft:rgba(136,169,214,.14);
+  --text:#f0eee6; --muted:#a8a59b; --faint:#75726a;
+  --accent:#d97757; --accent-hover:#e08b6d; --accent-soft:rgba(217,119,87,.13); --accent-line:rgba(217,119,87,.4);
+  --on-accent:#141311;
+  --ok:#8fb08a; --ok-soft:rgba(143,176,138,.13);
+  --warn:#e2bb4e; --warn-soft:rgba(226,187,78,.13);
+  --err:#e05252; --err-soft:rgba(224,82,82,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.045);
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --side:#161615; --pane:#1d1c1b; --logbg:#131312;
+}
+html[data-theme="light"]{
+  --bg:#f3f1ea; --surface:#fbfaf6;
+  --surface2:#eceade; --raise:#e3e0d2;
+  --border:#ddd9c9; --border-soft:rgba(0,0,0,.07);
+  --text:#26231d; --muted:#6e6a5e; --faint:#9b968a;
+  --shadow:0 1px 2px rgba(40,35,25,.1),0 10px 28px rgba(40,35,25,.1),inset 0 1px 0 rgba(255,255,255,.7);
+  --side:#eceade; --pane:#f0eee5; --logbg:#26231d;
+  --link:#4a7ab5; --link-soft:rgba(74,122,181,.14);
+  --on-accent:#fff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+::selection{background:rgba(136,169,214,.32)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5}
+button{font-family:var(--sans);cursor:pointer}
+svg{flex-shrink:0}
+.tc{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* ---------- layout ---------- */
+.shell{display:grid;grid-template-columns:216px 1fr;min-height:100vh}
+.sidebar{background:var(--side);border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 10px 18px}
+.logo-mark{width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.logo-name{font-family:var(--serif);font-size:19px;letter-spacing:.2px}
+.nav-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--muted);border:none;background:none;width:100%;text-align:left;font-size:13.5px}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent)}
+.nav-item .count{margin-left:auto;font-size:11px;background:var(--surface2);color:var(--muted);border-radius:10px;padding:1px 7px}
+.sidebar-footer{margin-top:auto;border-top:1px solid var(--border-soft);padding-top:12px}
+.account{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--raise);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+.plan{font-size:11px;color:var(--faint)}
+
+.page{display:none}
+.page.visible{display:block}
+.page-pad{padding:30px 34px;max-width:1020px}
+h1{font-family:var(--serif);font-size:23px;font-weight:500}
+.sub{color:var(--muted);margin-top:3px;font-size:13px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+
+.bench{display:grid;grid-template-columns:400px 1fr;min-height:100vh}
+.composer{border-right:1px solid var(--border);padding:24px 22px;background:var(--pane);overflow-y:auto;height:100vh;position:sticky;top:0}
+.deck{padding:26px 28px;min-width:0}
+
+/* ---------- componentes ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow);position:relative}
+.card-pad{padding:18px}
+/* a dobra — assinatura Fold em produções prontas */
+.folded::before{content:"";position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 16px 16px 0;border-color:transparent var(--bg) transparent transparent;z-index:2}
+.folded::after{content:"";position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:16px 16px 0 0;border-color:var(--accent) transparent transparent transparent;opacity:.85;z-index:1}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:9px;padding:9px 16px;font-size:13.5px;font-weight:500;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-ghost{background:none;border-color:var(--border);color:var(--text)}
+.btn-ghost:hover{background:rgba(255,255,255,.07)}
+.btn-danger{background:none;border-color:var(--border);color:var(--err)}
+.btn-danger:hover{background:var(--err-soft)}
+.btn-sm{padding:6px 11px;font-size:12.5px;border-radius:7px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.input,.select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;font-family:var(--sans)}
+.input:focus,.select:focus{outline:none;border-color:var(--link);box-shadow:0 0 0 3px var(--link-soft)}
+.input.err{border-color:var(--err)}
+.hint{font-size:11.5px;color:var(--faint);margin-top:5px}
+.hint.err{color:var(--err)}
+.row{display:flex;gap:12px}.row>*{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.chip-queue{background:var(--surface2);color:var(--muted)}
+.chip-run{background:var(--accent-soft);color:var(--accent)}
+.chip-review{background:var(--warn-soft);color:var(--warn)}
+.chip-done{background:var(--ok-soft);color:var(--ok)}
+.chip-err{background:var(--err-soft);color:var(--err)}
+.progress{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s ease}
+/* filme passando: textura animada na barra de progresso */
+.progress i.rolling{background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 3px,transparent 3px 9px);animation:roll 1s linear infinite}
+@keyframes roll{to{background-position:9px 0}}
+.toggle{position:relative;width:36px;height:20px;background:var(--surface2);border-radius:11px;border:1px solid var(--border);transition:.15s;cursor:pointer;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:.15s}
+.toggle.on::after{left:18px;background:var(--on-accent)}
+.divider{height:1px;background:var(--border-soft);margin:16px 0}
+.panel-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);margin-bottom:8px}
+.slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--surface2);accent-color:var(--accent)}
+.play-dot{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;border:none;flex-shrink:0}
+.play-dot.playing{background:var(--accent);color:var(--on-accent)}
+.wave{display:flex;gap:2px;align-items:center;height:16px}
+.wave i{width:2.5px;background:var(--faint);border-radius:2px;display:block;height:5px}
+.wave.playing i{background:var(--accent);animation:wv .55s ease-in-out infinite alternate}
+.wave i:nth-child(2){animation-delay:.1s}.wave i:nth-child(3){animation-delay:.2s}
+.wave i:nth-child(4){animation-delay:.05s}.wave i:nth-child(5){animation-delay:.15s}
+.wave i:nth-child(6){animation-delay:.25s}
+@keyframes wv{from{height:4px}to{height:15px}}
+.voice-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;margin-top:7px}
+.char-pick{display:flex;gap:8px;flex-wrap:wrap}
+.char-thumb{width:58px;text-align:center;background:none;border:none;color:var(--muted);font-size:10.5px}
+.char-thumb .ph{width:50px;height:50px;border-radius:11px;background:var(--surface2);border:2px solid transparent;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.char-thumb.selected .ph{border-color:var(--accent)}
+.char-thumb.selected{color:var(--accent)}
+.phone{aspect-ratio:9/16;background:var(--logbg);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--faint)}
+
+.deck-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.filters{display:flex;gap:7px;flex-wrap:wrap}
+.filter{background:none;border:1px solid var(--border);border-radius:20px;padding:5px 12px;color:var(--muted);font-size:12px;cursor:pointer}
+.filter:hover:not(.active){background:rgba(255,255,255,.05);color:var(--text)}
+.filter.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.filter b{font-weight:600;margin-left:4px;opacity:.75}
+.job{display:grid;grid-template-columns:42px 1fr auto auto;gap:13px;align-items:center;padding:13px 15px;cursor:pointer;margin-bottom:9px}
+.job:hover{border-color:var(--raise);background:rgba(255,255,255,.025)}
+.job .thumb{width:42px;height:56px;border-radius:8px;background:var(--logbg);display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.job-title{font-weight:600;font-size:13.5px;margin-bottom:2px}
+.job-meta{font-size:11.5px;color:var(--faint)}
+.job-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:165px}
+.detail-wrap{margin-bottom:9px;border:1px solid var(--accent-line);border-radius:13px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow);position:relative}
+.detail-wrap .job{margin-bottom:0;border:none;background:none;box-shadow:none}
+.job-detail{padding:4px 15px 16px;border-top:1px solid var(--border-soft)}
+.empty{border:1.5px dashed var(--border);border-radius:13px;padding:36px;text-align:center;color:var(--faint);font-size:13px}
+
+.pipeline{display:flex;align-items:center;margin:14px 0 18px}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
+.step::before{content:"";position:absolute;top:12px;left:-50%;width:100%;height:2px;background:var(--surface2)}
+.step:first-child::before{display:none}
+.step.done::before,.step.now::before{background:var(--accent)}
+.step .dot{width:24px;height:24px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--faint);z-index:1;font-size:10px}
+.step.done .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.step.now .dot{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.step span{font-size:10px;color:var(--faint)}
+.step.done span,.step.now span{color:var(--text)}
+.script-line{display:grid;grid-template-columns:46px 1fr;gap:11px;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px}
+.script-line .t{color:var(--faint);font-size:11px}
+.script-line .orig{color:var(--faint);font-size:11.5px;margin-top:2px}
+.detail-cols{display:grid;grid-template-columns:190px 1fr;gap:18px}
+.logs{background:var(--logbg);border:1px solid var(--border);border-radius:9px;padding:12px;font-family:var(--mono);font-size:11.5px;color:#a8a59b;line-height:1.75;margin-top:14px}
+.logs .ok{color:var(--ok)}.logs .acc{color:var(--accent)}.logs .wr{color:var(--warn)}
+
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
+.char-card{padding:0;overflow:hidden;text-align:center;cursor:pointer}
+.char-card .face{aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--faint);overflow:hidden}
+.char-card .face img,.char-card .face video{width:100%;height:100%;object-fit:cover}
+.char-card .nm{padding:9px;font-size:12.5px;font-weight:600}
+.char-card .nm small{display:block;font-weight:400;color:var(--faint);font-size:10.5px;margin-top:2px}
+.char-card .del{position:absolute;top:7px;right:7px;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.55);border:none;color:#f0eee6;display:none;align-items:center;justify-content:center;z-index:3}
+.char-card:hover .del{display:flex}
+.dropzone{border:1.5px dashed var(--border);border-radius:12px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--faint);text-align:center;cursor:pointer}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent-line);color:var(--muted)}
+.voice-card{display:flex;align-items:center;gap:13px;padding:13px 15px;margin-bottom:9px}
+.voice-card .info{flex:1;min-width:0}
+.voice-card .nm{font-weight:600;font-size:13.5px}
+.voice-card .nm code{font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-left:8px}
+.voice-card .ds{font-size:11.5px;color:var(--faint);margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}
+.stat{padding:16px}
+.stat .v{font-family:var(--serif);font-size:26px;margin:3px 0 1px}
+.stat .l{font-size:11.5px;color:var(--faint)}
+.stat .d{font-size:11px;color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);padding:10px 14px;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border-soft);color:var(--muted)}
+td:first-child{color:var(--text);font-weight:500}
+.seg{display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px}
+.seg button{background:none;border:none;color:var(--muted);font-size:12.5px;padding:6px 14px;border-radius:7px}
+.seg button.active{background:var(--raise);color:var(--text)}
+
+/* ---------- cor por status: vida nos pequenos detalhes ---------- */
+.dot-live{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.dot-live.pulse{animation:pulse 1.3s ease-in-out infinite}
+.filter{display:inline-flex;align-items:center;gap:6px}
+.filter .fdot{width:7px;height:7px;border-radius:50%}
+.filter[data-st="producing"].active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.filter[data-st="review"].active{background:var(--warn-soft);border-color:rgba(226,187,78,.45);color:var(--warn)}
+.filter[data-st="done"].active{background:var(--ok-soft);border-color:rgba(143,176,138,.45);color:var(--ok)}
+.filter[data-st="error"].active{background:var(--err-soft);border-color:rgba(224,82,82,.45);color:var(--err)}
+.filter[data-st="queue"].active{background:var(--surface2);border-color:var(--border);color:var(--text)}
+.card.job.s-producing{box-shadow:var(--shadow),inset 3px 0 0 var(--accent)}
+.card.job.s-review{box-shadow:var(--shadow),inset 3px 0 0 var(--warn)}
+.card.job.s-done{box-shadow:var(--shadow),inset 3px 0 0 var(--ok)}
+.card.job.s-error{box-shadow:var(--shadow),inset 3px 0 0 var(--err)}
+.job.s-producing .thumb{color:var(--accent)}
+.job.s-review .thumb{color:var(--warn)}
+.job.s-done .thumb{color:var(--ok)}
+.job.s-error .thumb{color:var(--err)}
+.detail-wrap.s-review{border-color:rgba(226,187,78,.55)}
+.detail-wrap.s-done{border-color:rgba(143,176,138,.55)}
+.detail-wrap.s-error{border-color:rgba(224,82,82,.55)}
+
+/* recursos gerados */
+.res-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--faint);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.res-btn:hover{color:var(--link);border-color:rgba(136,169,214,.4);background:var(--link-soft)}
+.res-row{display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid var(--border-soft)}
+.res-row:last-child{border-bottom:none}
+.res-row.off{opacity:.4}
+.res-row .ric{width:32px;height:32px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0}
+.res-row .rlbl{flex:1;min-width:0}
+.res-row .rnm{font-size:13px;font-weight:600}
+.res-row .rfile{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:1px}
+.res-row .ract{display:flex;gap:6px;align-items:center}
+
+/* modal + toasts */
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:40;overflow-y:auto;padding:48px 20px}
+.veil.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);width:100%;max-width:520px}
+.modal-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.modal-head h2{font-family:var(--serif);font-size:17px;font-weight:500;flex:1}
+.x{background:none;border:none;color:var(--muted);width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.x:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.modal-body{padding:20px}
+.upload-preview{display:none;align-items:center;gap:12px;margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.upload-preview img,.upload-preview video{width:52px;height:52px;border-radius:9px;object-fit:cover;background:var(--surface2)}
+.toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:60;align-items:center}
+.toast{background:var(--raise);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 16px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;animation:tin .18s ease}
+.toast .ic{color:var(--accent);display:flex}
+.toast.ok .ic{color:var(--ok)}
+.toast.err .ic{color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+
+.wf-banner{position:fixed;bottom:14px;right:14px;background:var(--raise);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:11.5px;color:var(--muted);z-index:50;box-shadow:var(--shadow)}
+
+/* fundo: grão de filme + vinhetas de luz */
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(1100px 520px at 75% -120px, rgba(217,119,87,.022), transparent 60%),
+    radial-gradient(900px 700px at -150px 110%, rgba(226,187,78,.012), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-attachment:fixed;
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="30" height="30" viewBox="0 0 512 512"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e08b6d"/><stop offset="1" stop-color="#d06a47"/></linearGradient></defs><path d="M40 240V152c0-22.1 17.9-40 40-40h118c12.6 0 24.4 5.9 32 16l21 28h169v100H40z" fill="#b25837"/><path d="M104 114h28l-18 40h-28z" fill="#f7efe4" opacity=".85"/><path d="M152 114h28l-18 40h-28z" fill="#f7efe4" opacity=".85"/><path d="M200 114h22l-14 30-22 2z" fill="#f7efe4" opacity=".85"/><path d="M76 176h312l84 84v112c0 19.9-16.1 36-36 36H76c-19.9 0-36-16.1-36-36V212c0-19.9 16.1-36 36-36z" fill="url(#lg)"/><path d="M388 176l84 84h-48c-19.9 0-36-16.1-36-36z" fill="#a64f2f"/><path d="M212 252l88 50-88 50z" fill="#f7efe4"/></svg>
+      </div>
+      <span class="logo-name">Fold <span style="color:var(--muted)">Videos</span></span>
+    </div>
+
+    <button class="nav-item" data-page="overview" onclick="go('overview',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      <span data-i18n="nav_overview">Visão geral</span>
+    </button>
+    <button class="nav-item active" data-page="estudio" onclick="go('estudio',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      <span data-i18n="nav_studio">Estúdio</span> <span style="margin-left:auto;display:flex;align-items:center;gap:6px"><span id="navDots" style="display:flex;gap:4px"></span><span class="count" id="navCount" style="margin-left:0">0</span></span>
+    </button>
+    <button class="nav-item" data-page="characters" onclick="go('characters',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span data-i18n="nav_chars">Personagens</span>
+    </button>
+    <button class="nav-item" data-page="voices" onclick="go('voices',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span data-i18n="nav_voices">Vozes</span>
+    </button>
+
+    <div class="nav-label">Workspace</div>
+    <button class="nav-item" data-page="settings" onclick="go('settings',this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>
+      <span data-i18n="nav_settings">Ajustes</span>
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="account">
+        <div class="avatar">AK</div>
+        <div>
+          <div style="font-size:13px">Akwe P.</div>
+          <div class="plan"><span data-i18n="plan_pre">Plano Studio</span> · beta</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ CONTEÚDO ============ -->
+  <main style="min-width:0">
+
+    <!-- ===== ESTÚDIO ===== -->
+    <section class="page visible" id="page-estudio">
+      <div class="bench">
+        <aside class="composer">
+          <h1 data-i18n="composer_title">Nova produção</h1>
+          <div class="sub" style="margin-bottom:20px" data-i18n-html="composer_sub">Da URL ao vídeo pronto em <span class="tc">~3min</span>.</div>
+
+          <div class="field">
+            <label data-i18n="lbl_link">Link do vídeo</label>
+            <input class="input" id="urlInput" placeholder="https://v.douyin.com/…">
+            <div class="hint" id="urlHint">Douyin e TikTok · até 5 links para lote</div>
+          </div>
+
+          <div class="row">
+            <div class="field"><label data-i18n="lbl_audio_lang">Idioma do áudio</label><select class="select" id="audioLang"><option>Português (BR)</option><option>English</option><option>Español</option><option>Français</option><option>Deutsch</option><option>Italiano</option><option>日本語</option><option>한국어</option><option>हिन्दी</option><option>Русский</option></select></div>
+            <div class="field"><label data-i18n="lbl_format">Formato</label><select class="select"><option>9:16</option></select></div>
+          </div>
+
+          <div class="field">
+            <label data-i18n="lbl_voice">Voz da narração</label>
+            <select class="select" id="voiceSelect" onchange="onVoiceChange()"></select>
+            <div class="voice-row">
+              <button class="play-dot" id="composerPlay" onclick="playVoice(document.getElementById('voiceSelect').value,this)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              </button>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:600" id="previewName">Prévia da voz</div>
+                <div style="font-size:10.5px;color:var(--faint)" id="previewStatus">"Olá! Este é um teste da voz selecionada."</div>
+              </div>
+              <div class="wave" id="composerWave"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label data-i18n="lbl_char">Personagem (lip sync)</label>
+            <div class="char-pick" id="composerChars"></div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="panel-label" data-i18n="finishing">Acabamento</div>
+
+          <div class="row">
+            <div class="field"><label data-i18n="lbl_grain">Textura de filme</label><select class="select" id="grainSelect"><option data-i18n="grain_subtle">Sutil</option><option data-i18n="grain_none">Nenhuma</option><option data-i18n="grain_med">Média</option><option data-i18n="grain_strong">Forte</option></select></div>
+            <div class="field"><label>Color grade — <span class="tc" id="lutLabel">50%</span></label><input type="range" class="slider" id="lutSlider" value="50" style="margin-top:12px" oninput="document.getElementById('lutLabel').textContent=this.value+'%'"></div>
+          </div>
+
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-weight:600;font-size:12.5px" data-i18n="wm_title">Limpar marca d'água e textos</div>
+              <div class="hint" style="margin-top:1px" data-i18n="wm_hint">Remove sobreposições do original</div>
+            </div>
+            <div class="toggle on" id="wmToggle"></div>
+          </div>
+
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-weight:600;font-size:12.5px" data-i18n="rv_title">Revisar roteiro antes do master</div>
+              <div class="hint" style="margin-top:1px" data-i18n="rv_hint">A produção pausa para você aprovar o texto; desligado, vai direto ao vídeo final</div>
+            </div>
+            <div class="toggle on" id="reviewToggle"></div>
+          </div>
+
+          <button class="btn btn-primary" id="produceBtn" style="width:100%;justify-content:center;padding:12px;margin-top:6px" onclick="produce()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            <span data-i18n="produce_btn">Produzir vídeo</span>
+          </button>
+          <div class="hint" style="text-align:center;margin-top:8px" data-i18n="hint_time">~3 minutos por vídeo</div>
+        </aside>
+
+        <div class="deck">
+          <div class="deck-head">
+            <div>
+              <h1 data-i18n="deck_title">Linha de produção</h1>
+              <div class="sub" id="deckSub"></div>
+            </div>
+            <div class="filters" id="filters"></div>
+          </div>
+          <div id="jobList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== VISÃO GERAL ===== -->
+    <section class="page" id="page-overview">
+      <div class="page-pad">
+        <div class="page-head">
+          <div><h1 data-i18n="ov_title">Visão geral</h1><div class="sub" data-i18n="ov_sub">Seu estúdio nos últimos 30 dias</div></div>
+          <button class="btn btn-primary" onclick="go('estudio',document.querySelector('[data-page=estudio]'))" data-i18n="new_production">Nova produção</button>
+        </div>
+        <div class="stats" id="statsRow"></div>
+        <div class="card"><table>
+          <thead><tr><th data-i18n="th_prod">Produção</th><th>Status</th><th data-i18n="th_voice">Voz</th><th data-i18n="th_len">Duração</th><th data-i18n="th_upd">Atualizada</th></tr></thead>
+          <tbody id="overviewRows"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ===== PERSONAGENS ===== -->
+    <section class="page" id="page-characters">
+      <div class="page-pad">
+        <div class="page-head">
+          <div><h1 data-i18n="ch_title">Personagens</h1><div class="sub" data-i18n="ch_sub">Rostos que narram suas produções com lip sync (DreamFace)</div></div>
+          <button class="btn btn-primary" onclick="openCharModal()" data-i18n="ch_add">Adicionar personagem</button>
+        </div>
+        <div class="grid-cards" id="charGrid"></div>
+      </div>
+    </section>
+
+    <!-- ===== VOZES ===== -->
+    <section class="page" id="page-voices">
+      <div class="page-pad">
+        <div class="page-head"><div><h1 data-i18n="vo_title">Vozes</h1><div class="sub" data-i18n="vo_sub">Catálogo MiniMax · ouça e defina a voz padrão das suas produções</div></div></div>
+        <div id="voiceList"></div>
+      </div>
+    </section>
+
+    <!-- ===== AJUSTES ===== -->
+    <section class="page" id="page-settings">
+      <div class="page-pad">
+        <div class="page-head"><div><h1 data-i18n="st_title">Ajustes</h1><div class="sub" data-i18n="st_sub">Preferências do site e da sua conta</div></div></div>
+        <div class="card card-pad" style="max-width:540px">
+          <div class="field">
+            <label data-i18n="st_theme">Tema</label>
+            <div class="seg" id="themeSeg">
+              <button class="active" onclick="setTheme('dark',this)" data-i18n="theme_dark">Escuro</button>
+              <button onclick="setTheme('light',this)" data-i18n="theme_light">Claro</button>
+              <button onclick="setTheme('system',this)" data-i18n="theme_system">Sistema</button>
+            </div>
+          </div>
+          <div class="field"><label data-i18n="st_lang">Idioma da interface</label><select class="select" id="uiLang" onchange="setLang(this.value)"><option value="pt">Português (Brasil)</option><option value="en">English</option></select></div>
+          <div class="divider"></div>
+          <div class="panel-label" data-i18n="st_notif">Notificações</div>
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:600;font-size:13px" data-i18n="st_n1">Avisar quando uma produção ficar pronta</div>
+            <div class="toggle on"></div>
+          </div>
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-weight:600;font-size:13px" data-i18n="st_n2">Avisar quando um roteiro pedir revisão</div>
+            <div class="toggle on"></div>
+          </div>
+          <div class="divider"></div>
+          <div class="panel-label" data-i18n="st_account">Conta</div>
+          <div class="field" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div>
+              <div style="font-weight:600;font-size:13px">akwe@fold.videos</div>
+              <div class="hint" style="margin-top:1px"><span data-i18n="plan_pre">Plano Studio</span> · beta</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="toast(t('toast_portal'),'ok')" data-i18n="st_manage">Gerenciar assinatura</button>
+          </div>
+          <div class="divider"></div>
+          <button class="btn btn-primary" onclick="toast(t('toast_saved'),'ok')" data-i18n="st_save">Salvar ajustes</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ MODAL: NOVO PERSONAGEM ============ -->
+<div class="veil" id="charModal" onclick="if(event.target===this)closeCharModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 data-i18n="cm_title">Novo personagem</h2>
+      <button class="x" onclick="closeCharModal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('charFile').click()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></svg>
+        <div data-i18n-html="cm_drop"><b style="color:var(--text)">Arraste um vídeo ou foto</b> ou clique para escolher</div>
+        <div style="font-size:11px" data-i18n="cm_drop2">MP4, MOV, WEBM ou imagem · rosto visível e bem iluminado</div>
+      </div>
+      <input type="file" id="charFile" accept="video/mp4,video/quicktime,video/webm,image/*" style="display:none" onchange="onCharFile(event)">
+      <div class="upload-preview" id="uploadPreview">
+        <img id="upImg" style="display:none" alt="">
+        <video id="upVid" style="display:none" muted autoplay loop playsinline></video>
+        <div style="min-width:0">
+          <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="upName"></div>
+          <div class="hint tc" id="upSize" style="margin-top:1px"></div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label data-i18n="cm_name">Nome do personagem</label>
+        <input class="input" id="charName" placeholder="Ex.: Li Wei, Chen Mei…" maxlength="100">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveChar()" data-i18n="cm_save">Salvar personagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: RECURSOS GERADOS ============ -->
+<div class="veil" id="resModal" onclick="if(event.target===this)closeRes()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h2 id="resTitle">Recursos gerados</h2>
+      <button class="x" onclick="closeRes()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></button>
+    </div>
+    <div class="modal-body" style="padding-top:12px">
+      <div class="hint" style="margin:0 0 8px" data-i18n="rm_hint">Cada arquivo gerado pelo pipeline — visualize ou baixe para testes manuais.</div>
+      <div id="resBody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const LANGS = {
+pt:{
+  nav_overview:'Visão geral', nav_studio:'Estúdio', nav_chars:'Personagens', nav_voices:'Vozes', nav_settings:'Ajustes',
+  plan_pre:'Plano Studio', plan_post:'créditos', acc_post:'créditos restantes',
+  composer_title:'Nova produção', composer_sub:'Da URL ao vídeo pronto em <span class="tc">~3min</span>.',
+  lbl_link:'Link do vídeo', hint_link:'Douyin e TikTok · até 5 links para lote', hint_link_err:'Cole um link válido do Douyin ou TikTok',
+  lbl_audio_lang:'Idioma do áudio', lbl_format:'Formato', lbl_voice:'Voz da narração', lbl_char:'Personagem (lip sync)',
+  finishing:'Acabamento', lbl_grain:'Textura de filme', grain_subtle:'Sutil', grain_none:'Nenhuma', grain_med:'Média', grain_strong:'Forte',
+  wm_title:"Limpar marca d'água e textos", wm_hint:'Remove sobreposições do original',
+  rv_title:'Revisar roteiro antes do master', rv_hint:'A produção pausa para você aprovar o texto; desligado, vai direto ao vídeo final',
+  produce_btn:'Produzir vídeo', credits_pre:'consome 1 crédito ·', credits_post:'restantes',
+  deck_title:'Linha de produção', w_productions:'produções', w_awaiting:'aguardando sua revisão',
+  f_all:'Todos', f_producing:'Produzindo', f_review:'Revisão', f_done:'Prontos', f_error:'Falhas', f_queue:'Na fila',
+  st_queue:'Na fila', st_producing:'Em produção', st_review:'Aguardando revisão', st_done:'Pronto', st_error:'Falha',
+  script_ready:'roteiro pronto para aprovar', dl_master:'Baixar master', retry:'Tentar de novo', queued_pos:'Na fila · posição',
+  before_after:'Antes / depois', play_compare:'tocar comparação', script_label:'Roteiro adaptado — revise antes de finalizar',
+  approve_btn:'Aprovar e finalizar', edit_script:'Editar roteiro', redo_voice:'Refazer narração', redo_lip:'Refazer lip sync',
+  resources:'Recursos', cancel:'Cancelar', cancel_prod:'Cancelar produção', delete_btn:'Excluir',
+  prod_fold:'Produção Fold', watch_master:'assistir master', final_script:'Roteiro final', dl_subs:'Baixar legendas',
+  log_capture:'Captura concluída', log_capture_full:'Captura', log_clean:"Limpeza — marca d'água e 14 textos removidos",
+  log_wait:'Narração — aguardando aprovação do roteiro', log_queue:'Na fila para captura…',
+  log_cleaning:'Limpeza — removendo marca e textos originais…', log_clean_done:'Limpeza concluída',
+  log_voicing:'Narração — sincronizando segmentos de áudio…', log_subs:'Legendas — queimando legendas estilo cinema…',
+  log_master:'Master — color grade e mux final…', err_generic:'Erro inesperado no pipeline.',
+  empty_html:'Nada por aqui. Cole um link ao lado e clique em <b style="color:var(--text)">Produzir vídeo</b>.',
+  default_chip:'Padrão', set_default:'Definir padrão', none:'Nenhum', new_w:'Novo',
+  ov_title:'Visão geral', ov_sub:'Seu estúdio nos últimos 30 dias', new_production:'Nova produção',
+  th_prod:'Produção', th_voice:'Voz', th_len:'Duração', th_upd:'Atualizada',
+  s_total:'Vídeos produzidos', s_week:'+22 esta semana', s_now:'Em produção agora', s_review:'Aguardando revisão',
+  s_action:'ação necessária', s_ok:'tudo em dia', s_avg:'Tempo médio', s_avg_sub:'da URL ao master',
+  ch_title:'Personagens', ch_sub:'Rostos que narram suas produções com lip sync (DreamFace)', ch_add:'Adicionar personagem',
+  vo_title:'Vozes', vo_sub:'Catálogo MiniMax · ouça e defina a voz padrão das suas produções',
+  st_title:'Ajustes', st_sub:'Preferências do site e da sua conta', st_theme:'Tema',
+  theme_dark:'Escuro', theme_light:'Claro', theme_system:'Sistema', st_lang:'Idioma da interface',
+  st_notif:'Notificações', st_n1:'Avisar quando uma produção ficar pronta', st_n2:'Avisar quando um roteiro pedir revisão',
+  st_account:'Conta', st_manage:'Gerenciar assinatura', st_save:'Salvar ajustes',
+  cm_title:'Novo personagem', cm_drop:'<b style="color:var(--text)">Arraste um vídeo ou foto</b> ou clique para escolher',
+  cm_drop2:'MP4, MOV, WEBM ou imagem · rosto visível e bem iluminado', cm_name:'Nome do personagem', cm_save:'Salvar personagem',
+  rm_hint:'Cada arquivo gerado pelo pipeline — visualize ou baixe para testes manuais.', not_generated:'ainda não gerado',
+  view:'Visualizar', dl:'Baixar',
+  r_src:'Vídeo original (Douyin)', r_clean:"Vídeo limpo — sem marca e textos", r_voice:'Narração (MiniMax)',
+  r_subs:'Legendas traduzidas', r_avatar:'Avatar com lip sync', r_master:'Master final 1080×1920',
+  w_preview:'Prévia', preview_quote:'"Olá! Este é um teste da voz selecionada."',
+  playing_status:'Tocando prévia (simulada — MiniMax na versão real)…', w_newprod:'Nova produção',
+  toast_saved:'Ajustes salvos', toast_portal:'Portal de assinatura abriria aqui (Stripe)',
+  toast_nocredits:'Créditos esgotados — gerencie sua assinatura em Ajustes', toast_started:'Produção iniciada — captura em andamento',
+  toast_fail:'Falha em "{x}" — tente de novo', toast_review:'"{x}": roteiro pronto para sua revisão',
+  toast_master:'Master de "{x}" pronto para baixar', toast_approved:'Roteiro aprovado — finalizando master',
+  toast_redo:'Refazendo {x}', toast_retry:'Nova tentativa iniciada', toast_canceled:'Produção cancelada',
+  toast_deleted:'Produção excluída', toast_dlmaster:'Download de "{x}" iniciado (master 1080×1920)',
+  toast_open:'Abrindo {x} no player (simulado)', toast_dl:'Download de {x} iniciado', toast_subs:'Download das legendas .srt iniciado',
+  toast_nolip:'Produção sem lip sync', toast_charsel:'Personagem {x} selecionado', toast_chardel:'Personagem excluído',
+  toast_charname:'Dê um nome ao personagem', toast_charfile:'Escolha um vídeo ou foto do rosto',
+  toast_charsaved:'Personagem "{x}" salvo — pronto para lip sync', toast_voicedef:'{x} agora é a voz padrão',
+  toast_theme:'Tema aplicado', toast_player:'Player de comparação abriria aqui', toast_editor:'Editor de roteiro abriria aqui',
+  toast_playermaster:'Player do master abriria aqui',
+  cf_cancel:'Cancelar a produção "{x}"?', cf_delete:'Excluir "{x}" e seus arquivos?', cf_delchar:'Excluir o personagem "{x}"?',
+  w_uses:'produções'
+},
+en:{
+  nav_overview:'Overview', nav_studio:'Studio', nav_chars:'Characters', nav_voices:'Voices', nav_settings:'Settings',
+  plan_pre:'Studio plan', plan_post:'credits', acc_post:'credits left',
+  composer_title:'New production', composer_sub:'From URL to a finished video in <span class="tc">~3min</span>.',
+  lbl_link:'Video link', hint_link:'Douyin & TikTok · up to 5 links per batch', hint_link_err:'Paste a valid Douyin or TikTok link',
+  lbl_audio_lang:'Audio language', lbl_format:'Format', lbl_voice:'Narration voice', lbl_char:'Character (lip sync)',
+  finishing:'Finishing', lbl_grain:'Film grain', grain_subtle:'Subtle', grain_none:'None', grain_med:'Medium', grain_strong:'Strong',
+  wm_title:'Remove watermark & original text', wm_hint:'Cleans overlays from the source video',
+  rv_title:'Review script before master', rv_hint:'Production pauses for your script approval; off, it goes straight to the final video',
+  produce_btn:'Produce video', credits_pre:'uses 1 credit ·', credits_post:'left',
+  deck_title:'Production line', w_productions:'productions', w_awaiting:'awaiting your review',
+  f_all:'All', f_producing:'Producing', f_review:'Review', f_done:'Done', f_error:'Failed', f_queue:'Queued',
+  st_queue:'Queued', st_producing:'Producing', st_review:'Awaiting review', st_done:'Done', st_error:'Failed',
+  script_ready:'script ready to approve', dl_master:'Download master', retry:'Try again', queued_pos:'Queued · position',
+  before_after:'Before / after', play_compare:'play comparison', script_label:'Adapted script — review before finishing',
+  approve_btn:'Approve & finish', edit_script:'Edit script', redo_voice:'Redo voiceover', redo_lip:'Redo lip sync',
+  resources:'Assets', cancel:'Cancel', cancel_prod:'Cancel production', delete_btn:'Delete',
+  prod_fold:'Fold production', watch_master:'watch master', final_script:'Final script', dl_subs:'Download subtitles',
+  log_capture:'Capture finished', log_capture_full:'Capture', log_clean:'Cleanup — watermark and 14 text blocks removed',
+  log_wait:'Voiceover — waiting for script approval', log_queue:'Queued for capture…',
+  log_cleaning:'Cleanup — removing watermark and original text…', log_clean_done:'Cleanup finished',
+  log_voicing:'Voiceover — syncing audio segments…', log_subs:'Subtitles — burning cinema-style captions…',
+  log_master:'Master — color grade and final mux…', err_generic:'Unexpected pipeline error.',
+  empty_html:'Nothing here yet. Paste a link on the left and hit <b style="color:var(--text)">Produce video</b>.',
+  default_chip:'Default', set_default:'Set default', none:'None', new_w:'New',
+  ov_title:'Overview', ov_sub:'Your studio over the last 30 days', new_production:'New production',
+  th_prod:'Production', th_voice:'Voice', th_len:'Length', th_upd:'Updated',
+  s_total:'Videos produced', s_week:'+22 this week', s_now:'Producing now', s_review:'Awaiting review',
+  s_action:'action needed', s_ok:'all clear', s_avg:'Average time', s_avg_sub:'from URL to master',
+  ch_title:'Characters', ch_sub:'Faces that narrate your productions with lip sync (DreamFace)', ch_add:'Add character',
+  vo_title:'Voices', vo_sub:'MiniMax catalog · listen and set your default narration voice',
+  st_title:'Settings', st_sub:'Site and account preferences', st_theme:'Theme',
+  theme_dark:'Dark', theme_light:'Light', theme_system:'System', st_lang:'Interface language',
+  st_notif:'Notifications', st_n1:'Notify when a production is ready', st_n2:'Notify when a script needs review',
+  st_account:'Account', st_manage:'Manage subscription', st_save:'Save settings',
+  cm_title:'New character', cm_drop:'<b style="color:var(--text)">Drag a video or photo</b> or click to choose',
+  cm_drop2:'MP4, MOV, WEBM or image · face visible and well lit', cm_name:'Character name', cm_save:'Save character',
+  rm_hint:'Every file generated by the pipeline — view or download for manual tests.', not_generated:'not generated yet',
+  view:'View', dl:'Download',
+  r_src:'Original video (Douyin)', r_clean:'Clean video — no watermark or text', r_voice:'Voiceover (MiniMax)',
+  r_subs:'Translated subtitles', r_avatar:'Lip-synced avatar', r_master:'Final master 1080×1920',
+  w_preview:'Preview', preview_quote:'"Hi! This is a test of the selected voice."',
+  playing_status:'Playing preview (simulated — MiniMax in the real version)…', w_newprod:'New production',
+  toast_saved:'Settings saved', toast_portal:'Subscription portal would open here (Stripe)',
+  toast_nocredits:'Out of credits — manage your subscription in Settings', toast_started:'Production started — capturing',
+  toast_fail:'"{x}" failed — try again', toast_review:'"{x}": script ready for your review',
+  toast_master:'Master of "{x}" ready to download', toast_approved:'Script approved — finishing master',
+  toast_redo:'Redoing {x}', toast_retry:'Retry started', toast_canceled:'Production canceled',
+  toast_deleted:'Production deleted', toast_dlmaster:'Download of "{x}" started (1080×1920 master)',
+  toast_open:'Opening {x} in the player (simulated)', toast_dl:'Download of {x} started', toast_subs:'.srt subtitles download started',
+  toast_nolip:'Production without lip sync', toast_charsel:'Character {x} selected', toast_chardel:'Character deleted',
+  toast_charname:'Give the character a name', toast_charfile:'Choose a video or photo of the face',
+  toast_charsaved:'Character "{x}" saved — ready for lip sync', toast_voicedef:'{x} is now the default voice',
+  toast_theme:'Theme applied', toast_player:'Comparison player would open here', toast_editor:'Script editor would open here',
+  toast_playermaster:'Master player would open here',
+  cf_cancel:'Cancel the production "{x}"?', cf_delete:'Delete "{x}" and its files?', cf_delchar:'Delete the character "{x}"?',
+  w_uses:'productions'
+}};
+let LNG = (()=>{ try{ return localStorage.getItem('fold-lang') || 'pt'; }catch(e){ return 'pt'; } })();
+const t  = k => (LANGS[LNG] && LANGS[LNG][k] !== undefined) ? LANGS[LNG][k] : (LANGS.pt[k] !== undefined ? LANGS.pt[k] : k);
+const tf = (k,x) => t(k).replace('{x}', x);
+function applyStatic(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
+  document.documentElement.lang = LNG==='pt' ? 'pt-BR' : 'en';
+}
+function setLang(l){
+  LNG = l; try{ localStorage.setItem('fold-lang', l); }catch(e){}
+  PHASES = PHASES_ALL[LNG]; STATUS = mkStatus();
+  applyStatic(); renderVoiceSelect(); renderChars(); renderVoices(); renderJobs(); renderOverview();
+}
+
+
+/* ================================================================
+   Fold Videos — frontend oficial
+   Conecta no FastAPI via proxy do Express (/api/translate/*, /api/tts/*)
+   ================================================================ */
+
+/* ---------- ajustes pós-dicionário ---------- */
+LANGS.pt.hint_time = '~3 minutos por vídeo';
+LANGS.en.hint_time = '~3 minutes per video';
+LANGS.pt.r_overlay = 'Camada de legendas (overlay)';
+LANGS.en.r_overlay = 'Subtitle overlay layer';
+LANGS.pt.reprocess = 'Reprocessar';
+LANGS.en.reprocess = 'Reprocess';
+LANGS.pt.toast_api = 'Erro ao falar com o servidor — ele está rodando?';
+LANGS.en.toast_api = 'Could not reach the server — is it running?';
+LANGS.pt.toast_tts = 'Não foi possível gerar a prévia da voz';
+LANGS.en.toast_tts = 'Could not generate the voice preview';
+LANGS.pt.review_note = 'Confira o vídeo original ao lado e aprove para gerar narração final, legendas e master.';
+LANGS.en.review_note = 'Check the original video on the left and approve to render the final voiceover, subtitles and master.';
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function toast(msg, kind){
+  const t0 = document.createElement('div');
+  t0.className = 'toast' + (kind ? ' '+kind : '');
+  const icons = {
+    ok:'<path d="m5 13 4 4L19 7"/>',
+    err:'<line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/>',
+    info:'<circle cx="12" cy="12" r="9"/><line x1="12" y1="10" x2="12" y2="16"/><circle cx="12" cy="7.5" r=".5"/>'
+  };
+  t0.innerHTML = `<span class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">${icons[kind]||icons.info}</svg></span>${msg}`;
+  $('toasts').appendChild(t0);
+  setTimeout(()=>{t0.style.opacity='0';t0.style.transition='opacity .25s';setTimeout(()=>t0.remove(),260)}, 3600);
+}
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  if(!r.ok){
+    let d = ''; try{ d = (await r.json()).detail || ''; }catch(e){}
+    throw new Error(typeof d === 'string' && d ? d : ('HTTP '+r.status));
+  }
+  return r;
+}
+const playSvg  = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+const stopSvg  = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>';
+const userSvg  = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`;
+const filmSvg  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>';
+const layersSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>';
+const eyeSvg   = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+const dlSvg    = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>';
+const RIC = {
+  film:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M2 9h5M2 15h5M17 9h5M17 15h5"/></svg>',
+  mic:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+  txt:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+  wand:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m5 19 10-10"/><path d="m15 5 4 4"/><path d="M19 13v.01M13 19v.01M19 19v.01"/></svg>',
+  fold:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 4h16v6c0 0-8-2-16 2V4z"/><path d="M4 12c8-4 16-2 16-2v10H4V12z" opacity=".55"/></svg>'
+};
+
+/* ---------- som + alertas de pronto/falha ---------- */
+let actx = null;
+function tone(freq, t0, dur, vol){
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  const at = actx.currentTime + t0;
+  g.gain.setValueAtTime(0, at);
+  g.gain.linearRampToValueAtTime(vol, at + .02);
+  g.gain.exponentialRampToValueAtTime(.0001, at + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(at); o.stop(at + dur + .05);
+}
+function sound(kind){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    if(kind === 'ok'){ tone(659, 0, .18, .25); tone(880, .14, .32, .25); }
+    else { tone(330, 0, .22, .22); tone(247, .17, .36, .22); }
+  }catch(e){}
+}
+let freshDone = false, freshTimer = null;
+function markFreshDone(){
+  freshDone = true; clearTimeout(freshTimer);
+  freshTimer = setTimeout(()=>{ freshDone = false; renderFilters(); }, 15000);
+  renderFilters();
+}
+let freshFail = false, failTimer = null;
+function markFreshFail(){
+  freshFail = true; clearTimeout(failTimer);
+  failTimer = setTimeout(()=>{ freshFail = false; renderFilters(); }, 30000);
+  renderFilters();
+}
+
+/* ---------- navegação ---------- */
+function go(page, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('visible'));
+  $('page-'+page).classList.add('visible');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(page==='overview') renderOverview();
+  if(page==='estudio' && (freshDone || freshFail)){
+    freshDone=false; clearTimeout(freshTimer);
+    freshFail=false; clearTimeout(failTimer);
+    renderFilters();
+  }
+  window.scrollTo(0,0);
+}
+
+/* ---------- tema ---------- */
+function setTheme(mode, btn){
+  if(btn){
+    document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const dark = mode==='dark' || (mode==='system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  try{ localStorage.setItem('fold-theme', mode); }catch(e){}
+  if(btn) toast(t('toast_theme'),'ok');
+}
+
+/* ---------- vozes (catálogo MiniMax + prévia real) ---------- */
+const VOICES = [
+  {id:'female-shaonv',      name:'Shaonv',             desc:'Feminina · jovem e energética · trends, receitas e humor',  den:'Female · young and energetic · trends, recipes and humor'},
+  {id:'female-yujie',       name:'Yujie',              desc:'Feminina · madura e elegante · lifestyle e decoração',      den:'Female · mature and elegant · lifestyle and decor'},
+  {id:'presenter_female',   name:'Apresentadora',      desc:'Feminina · clara e profissional · produtos e reviews',      den:'Female · clear and professional · products and reviews'},
+  {id:'presenter_male',     name:'Apresentador',       desc:'Masculina · clara e confiante · gadgets e curiosidades',    den:'Male · clear and confident · gadgets and curiosities'},
+  {id:'audiobook_male_1',   name:'Narrador audiobook', desc:'Masculina · profunda e pausada · histórias longas',         den:'Male · deep and paced · long stories'},
+  {id:'male-qn-jingying',   name:'Jingying',           desc:'Masculina · executiva · negócios e finanças',               den:'Male · executive · business and finance'},
+  {id:'male-qn-daxuesheng', name:'Daxuesheng',         desc:'Masculina · universitária · vlogs e dia a dia',             den:'Male · college vibe · vlogs and daily life'},
+  {id:'male-qn-badao',      name:'Badao',              desc:'Masculina · intensa · storytelling dramático',              den:'Male · intense · dramatic storytelling'},
+  {id:'male-qn-qingse',     name:'Qingse',             desc:'Masculina · suave · relaxamento e ASMR',                    den:'Male · soft · relaxation and ASMR'},
+];
+let defaultVoice = (()=>{ try{ return localStorage.getItem('fold-voice') || 'female-shaonv'; }catch(e){ return 'female-shaonv'; } })();
+function voiceName(id){ const v = VOICES.find(v=>v.id===id); return v ? v.name : (id||'—'); }
+function renderVoiceSelect(){
+  $('voiceSelect').innerHTML = VOICES.map(v=>
+    `<option value="${v.id}" ${v.id===defaultVoice?'selected':''}>${v.name} — ${(LNG==='en'?v.den:v.desc).split('·')[1].trim()}</option>`).join('');
+  onVoiceChange();
+}
+function onVoiceChange(){
+  $('previewName').textContent = t('w_preview') + ' — ' + voiceName($('voiceSelect').value);
+  $('previewStatus').textContent = t('preview_quote');
+}
+let curAudio = null, speakingId = null;
+async function playVoice(id, btn){
+  if(curAudio){ curAudio.pause(); curAudio = null; }
+  document.querySelectorAll('.play-dot.playing').forEach(b=>{b.classList.remove('playing');b.innerHTML=playSvg});
+  document.querySelectorAll('.wave.playing').forEach(w=>w.classList.remove('playing'));
+  const statusEl = btn.closest('.voice-row') ? $('previewStatus') : null;
+  if(speakingId === id){ speakingId = null; if(statusEl) statusEl.textContent = t('preview_quote'); return; }
+  speakingId = id;
+  btn.classList.add('playing'); btn.innerHTML = stopSvg;
+  const wave = btn.closest('.voice-row, .voice-card')?.querySelector('.wave');
+  if(wave) wave.classList.add('playing');
+  if(statusEl) statusEl.textContent = '…';
+  const done = ()=>{
+    if(speakingId!==id) return;
+    speakingId = null; curAudio = null;
+    btn.classList.remove('playing'); btn.innerHTML = playSvg;
+    if(wave) wave.classList.remove('playing');
+    if(statusEl) statusEl.textContent = t('preview_quote');
+  };
+  try{
+    const r = await api(`/api/tts/preview?voice_id=${encodeURIComponent(id)}`, {method:'POST'});
+    const blob = await r.blob();
+    curAudio = new Audio(URL.createObjectURL(blob));
+    curAudio.onended = done; curAudio.onerror = done;
+    curAudio.play();
+  }catch(e){ toast(t('toast_tts'),'err'); done(); }
+}
+function renderVoices(){
+  $('voiceList').innerHTML = VOICES.map(v=>`
+    <div class="card voice-card">
+      <button class="play-dot" onclick="playVoice('${v.id}',this)">${playSvg}</button>
+      <div class="info">
+        <div class="nm">${v.name}<code>${v.id}</code></div>
+        <div class="ds">${LNG==='en'?v.den:v.desc}</div>
+      </div>
+      <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      ${v.id===defaultVoice
+        ? `<span class="chip chip-run">${t('default_chip')}</span>`
+        : `<button class="btn btn-ghost btn-sm" onclick="setDefaultVoice('${v.id}')">${t('set_default')}</button>`}
+    </div>`).join('');
+}
+function setDefaultVoice(id){
+  defaultVoice = id;
+  try{ localStorage.setItem('fold-voice', id); }catch(e){}
+  renderVoices(); renderVoiceSelect();
+  toast(tf('toast_voicedef', voiceName(id)), 'ok');
+}
+
+/* ---------- personagens (API DreamFace) ---------- */
+let chars = [];
+let selectedChar = (()=>{ try{ return localStorage.getItem('fold-char') || null; }catch(e){ return null; } })();
+async function loadChars(){
+  try{
+    const r = await api('/api/translate/characters');
+    const data = await r.json();
+    chars = (Array.isArray(data) ? data : (data.characters || [])).map(c=>({id:c.id, name:c.name || 'Sem nome'}));
+    if(selectedChar && !chars.find(c=>c.id===selectedChar)) selectedChar = null;
+  }catch(e){ chars = []; }
+  renderChars();
+}
+const charImg = id => `/api/translate/characters/${id}/image`;
+function renderChars(){
+  $('composerChars').innerHTML =
+    `<button class="char-thumb ${selectedChar===null?'selected':''}" onclick="pickChar(null)">
+       <div class="ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>${t('none')}</button>` +
+    chars.map(c=>`
+      <button class="char-thumb ${selectedChar===c.id?'selected':''}" onclick="pickChar('${c.id}')">
+        <div class="ph"><img src="${charImg(c.id)}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='${userSvg(20).replace(/"/g,'&quot;')}'"></div>${esc(c.name).split(' ')[0]}</button>`).join('') +
+    `<button class="char-thumb" onclick="openCharModal()">
+       <div class="ph" style="border:2px dashed var(--border)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>${t('new_w')}</button>`;
+
+  $('charGrid').innerHTML = chars.map(c=>`
+    <div class="card char-card">
+      <button class="del" onclick="delChar('${c.id}')" title="${t('delete_btn')}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+      </button>
+      <div class="face"><img src="${charImg(c.id)}" onerror="this.outerHTML='${userSvg(32).replace(/"/g,'&quot;')}'"></div>
+      <div class="nm">${esc(c.name)}</div>
+    </div>`).join('') +
+    `<div class="card char-card" onclick="openCharModal()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;border-style:dashed;color:var(--faint);box-shadow:none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <div style="font-size:12.5px;margin-top:8px">${t('cm_title')}</div>
+    </div>`;
+}
+function pickChar(id){
+  selectedChar = id;
+  try{ id===null ? localStorage.removeItem('fold-char') : localStorage.setItem('fold-char', id); }catch(e){}
+  renderChars();
+  toast(id===null ? t('toast_nolip') : tf('toast_charsel', (chars.find(c=>c.id===id)||{}).name||''), 'ok');
+}
+async function delChar(id){
+  const c = chars.find(c=>c.id===id) || {name:''};
+  if(!confirm(tf('cf_delchar', c.name))) return;
+  try{
+    await api(`/api/translate/characters/${id}`, {method:'DELETE'});
+    if(selectedChar===id) selectedChar = null;
+    await loadChars();
+    toast(t('toast_chardel'));
+  }catch(e){ toast(e.message,'err'); }
+}
+let pendingFile = null;
+function openCharModal(){ $('charModal').classList.add('open'); $('charName').value=''; pendingFile=null; $('uploadPreview').style.display='none'; }
+function closeCharModal(){ $('charModal').classList.remove('open'); }
+function onCharFile(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  pendingFile = f;
+  const url = URL.createObjectURL(f);
+  const isVideo = f.type.startsWith('video');
+  $('upImg').style.display = isVideo ? 'none' : 'block';
+  $('upVid').style.display = isVideo ? 'block' : 'none';
+  (isVideo ? $('upVid') : $('upImg')).src = url;
+  $('upName').textContent = f.name;
+  $('upSize').textContent = (f.size/1024/1024).toFixed(1) + ' MB';
+  $('uploadPreview').style.display = 'flex';
+  if(!$('charName').value) $('charName').value = f.name.replace(/\.[^.]+$/,'');
+}
+async function saveChar(){
+  const name = $('charName').value.trim();
+  if(!name){ toast(t('toast_charname'),'err'); return; }
+  if(!pendingFile){ toast(t('toast_charfile'),'err'); return; }
+  try{
+    const fd = new FormData();
+    fd.append('file', pendingFile);
+    fd.append('name', name);
+    const r = await api('/api/translate/characters/upload', {method:'POST', body:fd});
+    const data = await r.json();
+    closeCharModal();
+    await loadChars();
+    if(data.id){ selectedChar = data.id; try{ localStorage.setItem('fold-char', data.id); }catch(e){} renderChars(); }
+    toast(tf('toast_charsaved', name), 'ok');
+  }catch(e){ toast(e.message,'err'); }
+}
+const dz = document.getElementById('dropzone');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));
+dz.addEventListener('drop',e=>{
+  const f = e.dataTransfer.files[0];
+  if(f){ $('charFile').files = e.dataTransfer.files; onCharFile({target:{files:[f]}}); }
+});
+
+/* ---------- fila (API) ---------- */
+const PHASES_ALL = {pt:['Captura','Limpeza','Narração','Legendas','Master'], en:['Capture','Cleanup','Voiceover','Subtitles','Master']};
+let PHASES = PHASES_ALL[LNG];
+const mkStatus = () => ({
+  queue:    {chip:'chip-queue',  label:t('st_queue')},
+  producing:{chip:'chip-run',    label:t('st_producing')},
+  review:   {chip:'chip-review', label:t('st_review')},
+  done:     {chip:'chip-done',   label:t('st_done')},
+  error:    {chip:'chip-err',    label:t('st_error')},
+});
+let STATUS = mkStatus();
+const ST_MAP = {
+  pending:'queue', downloading:'producing', processing_ocr:'producing',
+  processing_audio:'producing', pending_review:'review', approved:'producing',
+  processing_overlay:'producing', processing_synthesis:'producing',
+  done:'done', error:'error'
+};
+const PHASE_MAP = {
+  pending:0, downloading:0, processing_ocr:1, processing_audio:2,
+  pending_review:2, approved:2, processing_overlay:3, processing_synthesis:4,
+  done:5, error:0
+};
+let jobs = [];
+let filter = 'all';
+let expanded = null;
+let prevStatus = {};
+let autoApprove = (()=>{ try{ return JSON.parse(localStorage.getItem('fold-autoapprove')||'{}'); }catch(e){ return {}; } })();
+function saveAuto(){ try{ localStorage.setItem('fold-autoapprove', JSON.stringify(autoApprove)); }catch(e){} }
+function relTime(s){
+  if(!s) return '—';
+  const d = new Date(s); if(isNaN(d)) return '—';
+  const m = Math.floor((Date.now()-d.getTime())/60000);
+  if(m<1) return LNG==='en'?'now':'agora';
+  if(m<60) return LNG==='en'?`${m} min ago`:`há ${m} min`;
+  const h = Math.floor(m/60);
+  if(h<24) return LNG==='en'?`${h} h ago`:`há ${h} h`;
+  return LNG==='en'?`${Math.floor(h/24)} d ago`:`há ${Math.floor(h/24)} d`;
+}
+function shortUrl(u){ return String(u||'').replace(/^https?:\/\//,'').slice(0,30); }
+function normalize(raw){
+  const meta = (typeof raw.metadata === 'string' ? (()=>{try{return JSON.parse(raw.metadata)}catch(e){return {}}})() : raw.metadata) || {};
+  const st = ST_MAP[raw.status] || 'queue';
+  const phase = PHASE_MAP[raw.status] ?? 0;
+  let prog = typeof raw.progress === 'number' ? raw.progress : (st==='done'?100 : phase*20+8);
+  return {
+    id: raw.id || raw.job_id,
+    title: raw.original_title || raw.title || shortUrl(raw.source_url || raw.url) || 'Produção',
+    url: shortUrl(raw.source_url || raw.url),
+    dur: raw.duration ? `${Math.floor(raw.duration/60)}:${String(Math.round(raw.duration%60)).padStart(2,'0')}` : '—',
+    voice: voiceName(meta.voice_id),
+    status: st, phase: Math.min(phase,4), prog,
+    when: relTime(raw.updated_at || raw.created_at),
+    errMsg: raw.error_message || raw.error || null,
+    lastMessage: raw.lastMessage || '',
+    rawStatus: raw.status,
+  };
+}
+async function loadQueue(){
+  try{
+    const r = await api('/api/translate/queue');
+    const data = await r.json();
+    const raw = Array.isArray(data) ? data : (data.jobs || []);
+    const next = raw.map(normalize);
+    // transições → som, bolinhas e auto-aprovação
+    for(const j of next){
+      const prev = prevStatus[j.id];
+      if(prev && prev !== j.status){
+        if(j.status==='done'){ sound('ok'); markFreshDone(); toast(tf('toast_master', j.title), 'ok'); }
+        if(j.status==='error'){ sound('err'); markFreshFail(); toast(tf('toast_fail', j.title), 'err'); }
+        if(j.status==='review' && !autoApprove[j.id]) toast(tf('toast_review', j.title), 'ok');
+      }
+      prevStatus[j.id] = j.status;
+      if(j.status==='review' && autoApprove[j.id]){
+        delete autoApprove[j.id]; saveAuto();
+        approve(j.id, true);
+      }
+    }
+    jobs = next;
+    renderJobs();
+  }catch(e){ /* servidor fora — mantém última lista */ }
+}
+
+/* ---------- renderização da fila ---------- */
+function counts(){
+  const c = {all:jobs.length, queue:0, producing:0, review:0, done:0, error:0};
+  jobs.forEach(j=>c[j.status]++);
+  return c;
+}
+const FCOLOR = {all:null, producing:'var(--accent)', review:'var(--warn)', done:'var(--ok)', error:'var(--err)', queue:'var(--faint)'};
+function renderFilters(){
+  const c = counts();
+  const defs = [['all',t('f_all')],['producing',t('f_producing')],['review',t('f_review')],['done',t('f_done')],['error',t('f_error')],['queue',t('f_queue')]];
+  $('filters').innerHTML = defs.map(([k,l])=>{
+    const col = FCOLOR[k];
+    return `<button class="filter ${filter===k?'active':''}" data-st="${k}" onclick="setFilter('${k}')">`+
+      (col?`<span class="fdot" style="background:${col}"></span>`:'')+
+      `${l} <b class="tc" ${col?`style="color:${col};opacity:1"`:''}>${c[k]}</b></button>`;
+  }).join('');
+  $('deckSub').innerHTML = `<span class="tc">${c.all}</span> ${t('w_productions')} · <span class="tc"${c.review?' style="color:var(--warn)"':''}>${c.review}</span> ${t('w_awaiting')}`;
+  $('navCount').textContent = c.producing + c.review + c.queue;
+  $('navDots').innerHTML =
+    (freshDone?`<i class="dot-live pulse" style="background:var(--ok)"></i>`:'')+
+    (freshFail?`<i class="dot-live pulse" style="background:var(--err)"></i>`:'')+
+    (c.producing?`<i class="dot-live pulse" style="background:var(--accent)"></i>`:'')+
+    (c.review?`<i class="dot-live" style="background:var(--warn)"></i>`:'');
+}
+function setFilter(k){ filter = k; renderJobs(); }
+
+function jobRight(j){
+  if(j.status==='producing')
+    return `<span class="chip chip-run"><i class="dot-live pulse" style="background:var(--accent)"></i>${PHASES[j.phase]} · <span class="tc">${Math.round(j.prog)}%</span></span>
+            <div class="progress" style="width:150px"><i class="rolling" style="width:${j.prog}%"></i></div>`;
+  if(j.status==='review') return `<span class="chip chip-review">${t('st_review')}</span><span style="font-size:11px;color:var(--faint)">${t('script_ready')}</span>`;
+  if(j.status==='done')
+    return `<span class="chip chip-done">${t('st_done')}</span>
+            <a class="btn btn-ghost btn-sm" href="/api/translate/download/${j.id}" onclick="event.stopPropagation()" style="text-decoration:none">${dlSvg} ${t('dl_master')}</a>`;
+  if(j.status==='error')
+    return `<span class="chip chip-err">${t('st_error')}</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();retryJob('${j.id}')">${t('retry')}</button>`;
+  return `<span class="chip chip-queue">${t('st_queue')}</span>`;
+}
+function pipelineHtml(j){
+  return `<div class="pipeline">` + PHASES.map((p,i)=>{
+    const cls = j.status==='done' ? 'done' : (i<j.phase?'done':(i===j.phase?'now':''));
+    const dot = (cls==='done') ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg>' : (i+1);
+    return `<div class="step ${cls}"><div class="dot">${dot}</div><span>${p}</span></div>`;
+  }).join('') + `</div>`;
+}
+function detailHtml(j){
+  if(j.status==='review') return `
+    ${pipelineHtml(j)}
+    <div class="detail-cols">
+      <div>
+        <div class="panel-label">${t('before_after')}</div>
+        <video class="phone" style="max-height:280px;object-fit:cover" src="/api/translate/stream/source/${j.id}" controls preload="metadata"></video>
+      </div>
+      <div>
+        <div class="panel-label">${t('script_label')}</div>
+        <div id="script-${j.id}"><div class="hint">${t('review_note')}</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-primary btn-sm" onclick="approve('${j.id}')">${t('approve_btn')}</button>
+          <button class="btn btn-ghost btn-sm" onclick="redoLip('${j.id}')">${t('redo_lip')}</button>
+          <button class="btn btn-ghost btn-sm" onclick="reprocess('${j.id}')">${t('reprocess')}</button>
+          <button class="btn btn-ghost btn-sm" onclick="openRes('${j.id}')">${layersSvg} ${t('resources')}</button>
+          <button class="btn btn-danger btn-sm" onclick="removeJob('${j.id}')">${t('delete_btn')}</button>
+        </div>
+        <div class="logs">
+          <div><span class="ok">✓</span> ${t('log_capture')}</div>
+          <div><span class="wr">▸</span> ${t('log_wait')}</div>
+        </div>
+      </div>
+    </div>`;
+  if(j.status==='producing' || j.status==='queue') return `
+    ${pipelineHtml(j)}
+    <div class="logs">
+      <div><span class="acc">▸</span> ${esc(j.lastMessage) || PHASES[j.phase]+'…'}</div>
+    </div>
+    <div style="margin-top:12px"><button class="btn btn-danger btn-sm" onclick="removeJob('${j.id}')">${t('cancel_prod')}</button></div>`;
+  if(j.status==='done') return `
+    ${pipelineHtml(j)}
+    <div class="detail-cols">
+      <div>
+        <div class="panel-label" style="color:var(--accent)">${t('prod_fold')}</div>
+        <video class="phone" style="max-height:280px;object-fit:cover;border-color:var(--accent-line)" src="/api/translate/stream/output/${j.id}" controls preload="metadata"></video>
+      </div>
+      <div>
+        <div class="panel-label">${t('before_after')}</div>
+        <video class="phone" style="max-height:200px;object-fit:cover" src="/api/translate/stream/source/${j.id}" controls preload="metadata"></video>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <a class="btn btn-primary btn-sm" href="/api/translate/download/${j.id}" style="text-decoration:none">${t('dl_master')}</a>
+          <a class="btn btn-ghost btn-sm" href="/api/translate/download/${j.id}/srt" style="text-decoration:none">${t('dl_subs')}</a>
+          <button class="btn btn-ghost btn-sm" onclick="redoLip('${j.id}')">${t('redo_lip')}</button>
+          <button class="btn btn-ghost btn-sm" onclick="openRes('${j.id}')">${layersSvg} ${t('resources')}</button>
+          <button class="btn btn-danger btn-sm" onclick="removeJob('${j.id}')">${t('delete_btn')}</button>
+        </div>
+      </div>
+    </div>`;
+  return `
+    ${pipelineHtml(j)}
+    <div class="logs"><div><span style="color:var(--err)">✕</span> ${esc(j.errMsg)||t('err_generic')}</div></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="retryJob('${j.id}')">${t('retry')}</button>
+      <button class="btn btn-danger btn-sm" onclick="removeJob('${j.id}')">${t('delete_btn')}</button>
+    </div>`;
+}
+function renderJobs(){
+  renderFilters();
+  const list = jobs.filter(j=>filter==='all'||j.status===filter);
+  if(!list.length){
+    $('jobList').innerHTML = `<div class="empty">${t('empty_html')}</div>`;
+    return;
+  }
+  $('jobList').innerHTML = list.map(j=>{
+    const head = `
+      <div class="${expanded===j.id?'':'card '}job s-${j.status} ${j.status==='done'&&expanded!==j.id?'folded':''}" onclick="toggleJob('${j.id}')">
+        <div class="thumb">${filmSvg}</div>
+        <div>
+          <div class="job-title">${esc(j.title)}</div>
+          <div class="job-meta">${esc(j.url)} · <span class="tc">${j.dur}</span> · ${esc(j.voice)} · ${j.when}</div>
+        </div>
+        <div class="job-right">${jobRight(j)}</div>
+        <button class="res-btn" title="${t('resources')}" onclick="event.stopPropagation();openRes('${j.id}')">${layersSvg}</button>
+      </div>`;
+    if(expanded===j.id)
+      return `<div class="detail-wrap s-${j.status} ${j.status==='done'?'folded':''}">${head}<div class="job-detail">${detailHtml(j)}</div></div>`;
+    return head;
+  }).join('');
+  const r = jobs.find(j=>j.id===expanded && j.status==='review');
+  if(r) loadScript(r.id);
+}
+function toggleJob(id){ expanded = (expanded===id) ? null : id; renderJobs(); }
+
+/* roteiro da revisão: tenta os artefatos do pipeline; esconde se não houver */
+async function loadScript(id){
+  const box = document.getElementById('script-'+id);
+  if(!box || box.dataset.loaded) return;
+  for(const f of ['sub_segments_split.json','sub_segments.json']){
+    try{
+      const r = await fetch(`/api/translate/files/${id}/${f}`);
+      if(!r.ok) continue;
+      const data = await r.json();
+      const segs = Array.isArray(data) ? data : (data.segments || []);
+      if(!segs.length) continue;
+      box.dataset.loaded = '1';
+      box.innerHTML = segs.slice(0,8).map(s=>{
+        const st = s.start ?? s.start_time ?? 0;
+        const mm = `${Math.floor(st/60)}:${String(Math.floor(st%60)).padStart(2,'0')}`;
+        const pt = s.translation || s.translated_text || s.text_pt || '';
+        const zh = s.text || s.source_text || '';
+        return `<div class="script-line"><span class="t tc">${mm}</span><div><p>${esc(pt||zh)}</p>${pt?`<div class="orig">${esc(zh)}</div>`:''}</div></div>`;
+      }).join('');
+      return;
+    }catch(e){}
+  }
+  box.dataset.loaded = '1';
+}
+
+/* ---------- ações (API) ---------- */
+const AUDIO_LANGS = {'Português (BR)':'pt-BR','English':'en','Español':'es','Français':'fr','Deutsch':'de','Italiano':'it','日本語':'ja','한국어':'ko','हिन्दी':'hi','Русский':'ru'};
+async function produce(){
+  const inp = $('urlInput');
+  const url = inp.value.trim();
+  if(!/^(https?:\/\/)?([\w-]+\.)*(douyin|tiktok|iesdouyin)\.com\/\S+/i.test(url)){
+    inp.classList.add('err');
+    $('urlHint').textContent = t('hint_link_err');
+    $('urlHint').classList.add('err');
+    inp.focus();
+    return;
+  }
+  inp.classList.remove('err');
+  $('urlHint').textContent = t('hint_link');
+  $('urlHint').classList.remove('err');
+  const meta = {
+    voice_id: $('voiceSelect').value,
+    grain_level: $('grainSelect').value,
+    lut_intensity: parseInt($('lutSlider').value),
+    remove_watermark: $('wmToggle').classList.contains('on'),
+  };
+  if(selectedChar) meta.character_id = selectedChar;
+  const body = {
+    source_url: url.startsWith('http') ? url : 'https://'+url,
+    target_language: AUDIO_LANGS[$('audioLang').value] || 'pt-BR',
+    metadata: meta,
+  };
+  const btn = $('produceBtn');
+  btn.disabled = true;
+  try{
+    const r = await api('/api/translate/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const data = await r.json();
+    const jid = data.id || data.job_id;
+    if(jid && !$('reviewToggle').classList.contains('on')){ autoApprove[jid] = true; saveAuto(); }
+    inp.value = '';
+    expanded = jid || null; filter = 'all';
+    toast(t('toast_started'),'ok');
+    await loadQueue();
+  }catch(e){ toast(e.message || t('toast_api'),'err'); }
+  finally{ btn.disabled = false; }
+}
+async function approve(id, silent){
+  try{
+    await api(`/api/translate/approve/${id}`, {method:'POST'});
+    if(!silent) toast(t('toast_approved'),'ok');
+    await loadQueue();
+  }catch(e){ toast(e.message,'err'); }
+}
+async function redoLip(id){
+  try{
+    await api(`/api/translate/redo-lipsync/${id}`, {method:'POST'});
+    toast(tf('toast_redo','lip sync'),'ok');
+    await loadQueue();
+  }catch(e){ toast(e.message,'err'); }
+}
+async function reprocess(id){
+  try{
+    await api(`/api/translate/reprocess/${id}`, {method:'POST'});
+    toast(t('toast_retry'),'ok');
+    await loadQueue();
+  }catch(e){ toast(e.message,'err'); }
+}
+async function retryJob(id){
+  try{
+    await api(`/api/translate/retry/${id}`, {method:'POST'});
+    if(!$('reviewToggle').classList.contains('on')){ autoApprove[id] = true; saveAuto(); }
+    expanded = id;
+    toast(t('toast_retry'),'ok');
+    await loadQueue();
+  }catch(e){ toast(e.message,'err'); }
+}
+async function removeJob(id){
+  const j = jobs.find(x=>x.id===id) || {title:''};
+  if(!confirm(tf('cf_delete', j.title))) return;
+  try{
+    await api(`/api/translate/jobs/${id}`, {method:'DELETE'});
+    if(expanded===id) expanded = null;
+    toast(t('toast_deleted'));
+    await loadQueue();
+  }catch(e){ toast(e.message,'err'); }
+}
+
+/* ---------- recursos gerados (links reais) ---------- */
+function resItems(j){
+  const started = j.status!=='queue';
+  const mid = j.status==='review' || j.phase>=3 || j.status==='done';
+  return [
+    {nm:t('r_src'),     url:`/api/translate/stream/source/${j.id}`,   ok:started,            ic:RIC.film},
+    {nm:t('r_voice'),   url:`/api/translate/download/${j.id}/audio`,  ok:mid,                ic:RIC.mic},
+    {nm:t('r_subs'),    url:`/api/translate/download/${j.id}/srt`,    ok:mid,                ic:RIC.txt},
+    {nm:t('r_overlay'), url:`/api/translate/download/${j.id}/overlay`,ok:j.phase>=4||j.status==='done', ic:RIC.wand},
+    {nm:t('r_master'),  url:`/api/translate/download/${j.id}`,        ok:j.status==='done',  ic:RIC.fold, view:`/api/translate/stream/output/${j.id}`},
+  ];
+}
+function openRes(id){
+  const j = jobs.find(x=>x.id===id);
+  if(!j) return;
+  $('resTitle').textContent = t('resources') + ' — ' + j.title;
+  $('resBody').innerHTML = resItems(j).map(r=>`
+    <div class="res-row ${r.ok?'':'off'}">
+      <div class="ric">${r.ic}</div>
+      <div class="rlbl"><div class="rnm">${r.nm}</div><div class="rfile">${r.url.split('/').slice(-2).join('/')}</div></div>
+      <div class="ract">${r.ok
+        ? `<a class="res-btn" title="${t('view')}" href="${r.view||r.url}" target="_blank">${eyeSvg}</a>
+           <a class="res-btn" title="${t('dl')}" href="${r.url}" download>${dlSvg}</a>`
+        : `<span class="hint" style="margin:0">${t('not_generated')}</span>`}</div>
+    </div>`).join('');
+  $('resModal').classList.add('open');
+}
+function closeRes(){ $('resModal').classList.remove('open'); }
+
+/* ---------- visão geral ---------- */
+function renderOverview(){
+  const c = counts();
+  $('statsRow').innerHTML = `
+    <div class="card stat"><div class="l">${t('s_total')}</div><div class="v tc">${c.done}</div><div class="d">&nbsp;</div></div>
+    <div class="card stat"><div class="l">${t('s_now')}</div><div class="v tc" style="color:${c.producing+c.queue?'var(--accent)':'inherit'}">${c.producing+c.queue}</div><div class="d">&nbsp;</div></div>
+    <div class="card stat"><div class="l">${t('s_review')}</div><div class="v tc" style="color:${c.review?'var(--warn)':'inherit'}">${c.review}</div><div class="d" style="color:${c.review?'var(--warn)':'var(--ok)'}">${c.review?t('s_action'):t('s_ok')}</div></div>
+    <div class="card stat"><div class="l">${t('s_avg')}</div><div class="v tc">~3min</div><div class="d">${t('s_avg_sub')}</div></div>`;
+  $('overviewRows').innerHTML = jobs.slice(0,8).map(j=>`
+    <tr style="cursor:pointer" onclick="expanded='${j.id}';go('estudio',document.querySelector('[data-page=estudio]'));renderJobs()">
+      <td>${esc(j.title)}</td>
+      <td><span class="chip ${STATUS[j.status].chip}">${STATUS[j.status].label}</span></td>
+      <td>${esc(j.voice)}</td><td class="tc">${j.dur}</td><td>${j.when}</td>
+    </tr>`).join('');
+}
+
+/* ---------- init ---------- */
+document.querySelectorAll('.toggle').forEach(tg=>tg.addEventListener('click',()=>tg.classList.toggle('on')));
+try{
+  const saved = localStorage.getItem('fold-theme');
+  if(saved){
+    setTheme(saved, null);
+    const idx = {dark:0, light:1, system:2}[saved];
+    document.querySelectorAll('#themeSeg button').forEach((b,i)=>b.classList.toggle('active', i===idx));
+  }
+}catch(e){}
+const uiSel = $('uiLang'); if(uiSel) uiSel.value = LNG;
+applyStatic();
+renderVoiceSelect();
+renderVoices();
+renderChars();
+loadChars();
+renderJobs();
+renderOverview();
+loadQueue();
+setInterval(loadQueue, 4000);
+
+</script>
+</body>
+</html>
