@@ -98,9 +98,9 @@ app.use((req, res, next) => {
   }
 });
 
-// Página principal → novo design Fold Videos
-app.get('/', (_req, res) => res.redirect('/fold.html'));
-app.get('/fold', (_req, res) => res.redirect('/fold.html'));
+// Página principal → serve fold.html sem mudar a URL (fica só foldvideo.com)
+app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'fold.html')));
+app.get('/fold', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'fold.html')));
 
 app.use(express.static(PUBLIC_DIR));
 app.use('/assets', express.static(ASSETS_DIR));
