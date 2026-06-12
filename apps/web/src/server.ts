@@ -98,8 +98,9 @@ app.use((req, res, next) => {
   }
 });
 
-// Página principal → translation pipeline (Douyin → PT-BR)
-app.get('/', (_req, res) => res.redirect('/translation.html'));
+// Página principal → novo design Fold Videos
+app.get('/', (_req, res) => res.redirect('/fold.html'));
+app.get('/fold', (_req, res) => res.redirect('/fold.html'));
 
 app.use(express.static(PUBLIC_DIR));
 app.use('/assets', express.static(ASSETS_DIR));
