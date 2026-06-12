@@ -38,9 +38,18 @@ class FFmpegWrapper:
     """Async wrapper for FFmpeg operations used throughout the pipeline."""
 
     def __init__(self, ffmpeg_path: str = "ffmpeg", ffprobe_path: str = "ffprobe"):
-        # Auto-detect local static binary with full filter support (libass, etc.)
+        import os as _os
+        import platform as _platform
+        # 1) env vars têm prioridade (deploy Linux usa o ffmpeg do sistema)
+        _env_ffmpeg = _os.environ.get("FFMPEG_PATH")
+        if _env_ffmpeg:
+            self.ffmpeg = _env_ffmpeg
+            self.ffprobe = _os.environ.get("FFPROBE_PATH", "ffprobe")
+            logger.info("ffmpeg.using_env_binary", path=self.ffmpeg)
+            return
+        # 2) binário local empacotado é Mach-O (macOS) — só usar no Darwin
         _local_bin = Path(__file__).resolve().parent.parent.parent / "bin" / "ffmpeg"
-        if _local_bin.exists():
+        if _local_bin.exists() and _platform.system() == "Darwin":
             self.ffmpeg = str(_local_bin)
             # Check for local ffprobe too
             _local_probe = _local_bin.parent / "ffprobe"

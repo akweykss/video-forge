@@ -1,0 +1,17 @@
+.git
+node_modules
+**/node_modules
+**/.turbo
+apps/translation-pipeline/workspace
+apps/translation-pipeline/data
+apps/translation-pipeline/bin
+apps/translation-pipeline/design-wireframes
+apps/assets
+apps/web/assets
+assets
+out
+**/dist
+*.log
+.env
+**/.env
+.DS_Store

@@ -54,8 +54,11 @@ logger = structlog.get_logger(__name__)
 
 # ── Configuration ──────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent.parent
-WORKSPACE_DIR = BASE_DIR / "workspace"
-DB_PATH = BASE_DIR / "data" / "pipeline.db"
+import os as _os_env
+WORKSPACE_DIR = Path(_os_env.environ.get("FOLD_WORKSPACE_DIR", str(BASE_DIR / "workspace")))
+DB_PATH = Path(_os_env.environ.get("FOLD_DB_PATH", str(BASE_DIR / "data" / "pipeline.db")))
+WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 COOKIES_PATH = os.getenv("DOUYIN_COOKIES_PATH", "")
 LUT_PATH = Path(__file__).parent / "utils" / "luts" / "gradient.cube"
 
