@@ -108,11 +108,11 @@ app.use('/assets', express.static(ASSETS_DIR));
 // ============================================================
 // Proxy: /api/translate/* → FastAPI (port 8000)
 // ============================================================
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
+const FASTAPI_URL = (process.env.FASTAPI_URL || 'http://localhost:8000').replace(/\/$/, '');
 
-app.all(['/api/translate/*', '/api/tts/*'], async (req, res) => {
-  const targetPath = req.originalUrl; // Keep full path
-  const targetUrl = `${FASTAPI_URL}${targetPath}`;
+const proxyToFastAPI = async (req: express.Request, res: express.Response) => {
+  const targetUrl = `${FASTAPI_URL}${req.originalUrl}`;
+
 
   try {
     const headers: Record<string, string> = {
@@ -206,10 +206,14 @@ app.all(['/api/translate/*', '/api/tts/*'], async (req, res) => {
     console.error(`[Proxy] Erro ao encaminhar para FastAPI: ${error}`);
     res.status(502).json({
       error: 'Translation Pipeline indisponível',
-      detail: 'O servidor FastAPI não está rodando. Inicie com: cd apps/translation-pipeline && python -m uvicorn src.server:app --port 8000',
+      detail: `FastAPI URL: ${FASTAPI_URL}`,
     });
   }
-});
+};
+
+// Registra as rotas do proxy explicitamente (mais confiável no Express 4)
+app.all('/api/translate/*', proxyToFastAPI);
+app.all('/api/tts/*', proxyToFastAPI);
 
 // ============================================================
 // GET /api/manifests — List all generated manifests
