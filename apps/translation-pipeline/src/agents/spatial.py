@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+
+import structlog
 from pathlib import Path
 from typing import Any, Optional
 
