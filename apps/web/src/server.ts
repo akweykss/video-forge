@@ -98,7 +98,9 @@ app.use((req, res, next) => {
   }
 });
 
-// Static files
+// Página principal → translation pipeline (Douyin → PT-BR)
+app.get('/', (_req, res) => res.redirect('/translation.html'));
+
 app.use(express.static(PUBLIC_DIR));
 app.use('/assets', express.static(ASSETS_DIR));
 
