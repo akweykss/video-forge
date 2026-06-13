@@ -211,11 +211,14 @@ const proxyToFastAPI = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// Registra as rotas do proxy — usa regex para garantir match em qualquer versão do Express
-// Captura: /api/translate/qualquer-coisa e /api/tts/qualquer-coisa
-app.all(/^\/api\/(translate|tts)\//, proxyToFastAPI);
-// Também captura rotas sem trailing slash (ex: /api/translate/queue)
-app.all(/^\/api\/(translate|tts)($|\?)/, proxyToFastAPI);
+// Registra as rotas do proxy via app.use() — mais robusto que wildcards no Express 4
+// app.use(path) combina o path E qualquer sub-rota (ex: /api/translate/queue)
+// req.originalUrl preserva a URL completa para o proxy
+app.use('/api/translate', proxyToFastAPI);
+app.use('/api/tts', proxyToFastAPI);
+
+// Endpoint de diagnóstico — confirma que o novo código está rodando
+app.get('/api/ping', (_req, res) => res.json({ ok: true, fastapi: FASTAPI_URL }));
 
 console.log(`[Proxy] FASTAPI_URL = ${FASTAPI_URL}`);
 
