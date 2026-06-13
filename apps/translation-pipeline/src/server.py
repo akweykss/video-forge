@@ -23,11 +23,18 @@ from pydantic import BaseModel, Field, HttpUrl
 
 from .agents.ingestion import IngestionAgent
 from .agents.overlay import OverlayAgent
-from .agents.spatial import SpatialAgent
 from .agents.synthesis import SynthesisAgent
 from .agents.voice import VoiceAgent
 from .db.models import Database, JobStatus
 from .utils.manifest import JobManifest
+
+# SpatialAgent usa cv2/paddleocr — import condicional para não travar o boot
+try:
+    from .agents.spatial import SpatialAgent
+    _SPATIAL_AVAILABLE = True
+except Exception:
+    SpatialAgent = None  # type: ignore[assignment,misc]
+    _SPATIAL_AVAILABLE = False
 
 # ── Load environment variables ─────────────────────────────────────
 load_dotenv()

@@ -10,9 +10,9 @@ aiosqlite==0.21.0
 # === Video Download ===
 yt-dlp==2024.12.23
 
-# === OCR ===
-paddlepaddle==3.0.0
-paddleocr==2.10.0
+# === OCR (opcional — não instalado em produção para economizar memória) ===
+# paddlepaddle==3.0.0  ← ~1GB, excede limites do Railway
+# paddleocr==2.10.0   ← depende do paddlepaddle
 
 # === Computer Vision ===
 opencv-python-headless==4.11.0.86
