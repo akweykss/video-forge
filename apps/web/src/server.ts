@@ -99,8 +99,9 @@ app.use((req, res, next) => {
 });
 
 // Página principal → serve fold.html sem mudar a URL (fica só foldvideo.com)
-app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'fold.html')));
-app.get('/fold', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'fold.html')));
+const noCacheHtml = (res: any) => res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+app.get('/', (_req, res) => { noCacheHtml(res); res.sendFile(path.join(PUBLIC_DIR, 'fold.html')); });
+app.get('/fold', (_req, res) => { noCacheHtml(res); res.sendFile(path.join(PUBLIC_DIR, 'fold.html')); });
 
 // Favicon explícito — browsers buscam /favicon.ico automaticamente
 app.get('/favicon.ico', (_req, res) => {
@@ -109,7 +110,12 @@ app.get('/favicon.ico', (_req, res) => {
 });
 
 // Estáticos (PNG, SVG, etc.) com cache de 1 dia
-app.use(express.static(PUBLIC_DIR, { maxAge: '1d' }));
+app.use(express.static(PUBLIC_DIR, {
+  maxAge: '1d',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  },
+}));
 app.use('/assets', express.static(ASSETS_DIR));
 
 // ============================================================
