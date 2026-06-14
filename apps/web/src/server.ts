@@ -102,7 +102,14 @@ app.use((req, res, next) => {
 app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'fold.html')));
 app.get('/fold', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'fold.html')));
 
-app.use(express.static(PUBLIC_DIR));
+// Favicon explícito — browsers buscam /favicon.ico automaticamente
+app.get('/favicon.ico', (_req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(PUBLIC_DIR, 'favicon.ico'));
+});
+
+// Estáticos (PNG, SVG, etc.) com cache de 1 dia
+app.use(express.static(PUBLIC_DIR, { maxAge: '1d' }));
 app.use('/assets', express.static(ASSETS_DIR));
 
 // ============================================================
