@@ -1615,6 +1615,15 @@ async def get_character_image(character_id: str):
     raise HTTPException(status_code=404, detail="Character thumbnail not found")
 
 
+@app.get("/api/translate/lipsync-audio/{job_id}", tags=["characters"])
+async def get_lipsync_audio(job_id: str):
+    """Serve o áudio TTS final de um job (para o DreamFace baixar via URL)."""
+    audio_path = WORKSPACE_DIR / "downloads" / job_id / "voice" / "merged_audio.wav"
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Audio not found")
+    return FileResponse(path=str(audio_path), media_type="audio/wav")
+
+
 @app.get("/api/translate/characters/{character_id}/avatar", tags=["characters"])
 async def get_character_avatar(character_id: str):
     """Serve the full character avatar file (video or image).
@@ -1632,6 +1641,10 @@ async def get_character_avatar(character_id: str):
     meta = _json_module.loads(meta_path.read_text())
     avatar_filename = meta.get("avatar_filename", "")
     avatar_path = char_dir / avatar_filename
+    # Prefere a versão 720p compactada (< 50MB) p/ o DreamFace baixar por URL
+    _compact = avatar_path.with_name(avatar_path.stem + "_720.mp4") if avatar_path.suffix else None
+    if _compact and _compact.exists():
+        avatar_path = _compact
     if not avatar_path.exists():
         raise HTTPException(status_code=404, detail="Avatar file not found")
 

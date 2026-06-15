@@ -213,16 +213,25 @@ class SynthesisAgent:
             dreamface_task = None
             if lipsync_agent and avatar_file:
                 _synth_progress(86, "🎭 Enviando áudio ao DreamFace (paralelo)...")
+                # URL pública (Railway): DreamFace baixa avatar+áudio direto,
+                # SEM o upload que falha. Mesmo padrão da marca d'água.
+                _base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+                if not _base and os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
+                    _base = "https://" + os.environ["RAILWAY_PUBLIC_DOMAIN"]
+                _avatar_url = f"{_base}/api/translate/characters/{character_id}/avatar" if _base else None
+                _audio_url = f"{_base}/api/translate/lipsync-audio/{job_id}" if _base else None
                 logger.info(
                     "synthesis.lipsync_start_parallel",
-                    job_id=job_id,
-                    character_id=character_id,
+                    job_id=job_id, character_id=character_id,
+                    via="url" if _avatar_url else "upload", base=_base or "(none)",
                 )
                 dreamface_task = asyncio.create_task(
                     lipsync_agent.process(
                         job_id=job_id,
                         audio_path=Path(audio_path),
                         avatar_video_path=avatar_file,
+                        avatar_url=_avatar_url,
+                        audio_url=_audio_url,
                         progress_callback=lambda phase, pct, msg: _synth_progress(
                             86 + pct * 0.04, f"🎭 {msg}"
                         ),

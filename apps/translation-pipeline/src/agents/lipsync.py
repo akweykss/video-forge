@@ -42,6 +42,8 @@ class LipSyncAgent:
         audio_path: Path,
         avatar_video_path: Path,
         progress_callback: Optional[Callable] = None,
+        avatar_url: Optional[str] = None,
+        audio_url: Optional[str] = None,
     ) -> Optional[Path]:
         """Generate a lip-synced video from avatar video + TTS audio.
 
@@ -104,24 +106,34 @@ class LipSyncAgent:
                 progress_callback("lipsync", 20, "Enviando vídeo e áudio para DreamFace...")
 
             task_id = None
-            for _attempt in (1, 2, 3):
-                try:
-                    task_id = await loop.run_in_executor(
-                        None,
-                        api.talking_face_from_file,
-                        str(avatar_video_path),
-                        str(audio_path),
-                        video_param,
-                    )
-                    break
-                except Exception as _up_err:
-                    logger.warning(
-                        "lipsync.upload_retry",
-                        job_id=job_id, attempt=_attempt, error=str(_up_err),
-                    )
-                    if _attempt == 3:
-                        raise
-                    await asyncio.sleep(4 * _attempt)
+            # Caminho preferido (igual à marca d'água): URLs públicas → SEM upload.
+            # O avatar 720p (~5MB < 50MB) é usado direto pela API.
+            if avatar_url and audio_url:
+                logger.info("lipsync.via_url", job_id=job_id, avatar_url=avatar_url, audio_url=audio_url)
+                for _attempt in (1, 2, 3):
+                    try:
+                        task_id = await loop.run_in_executor(
+                            None, api.talking_face_from_url,
+                            avatar_url, audio_url, video_param,
+                        )
+                        break
+                    except Exception as _u:
+                        logger.warning("lipsync.url_retry", job_id=job_id, attempt=_attempt, error=str(_u))
+                        if _attempt == 3: raise
+                        await asyncio.sleep(4 * _attempt)
+            else:
+                # Fallback local (sem URL pública): upload de arquivo
+                for _attempt in (1, 2, 3):
+                    try:
+                        task_id = await loop.run_in_executor(
+                            None, api.talking_face_from_file,
+                            str(avatar_video_path), str(audio_path), video_param,
+                        )
+                        break
+                    except Exception as _up_err:
+                        logger.warning("lipsync.upload_retry", job_id=job_id, attempt=_attempt, error=str(_up_err))
+                        if _attempt == 3: raise
+                        await asyncio.sleep(4 * _attempt)
 
             if not task_id:
                 logger.error("lipsync.no_task_id", job_id=job_id)
