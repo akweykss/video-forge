@@ -86,10 +86,7 @@ class SynthesisAgent:
             ass_subtitle_path = overlay.get("ass_subtitle_path")
             sub_blur_region = overlay.get("sub_blur_region")
 
-            # Skip blur if:
-            # 1. Watermark was successfully removed (manifest flag), OR
-            # 2. User requested watermark removal (job metadata) — even if it
-            #    failed, they don't want the blur overlay.
+            # ── Lê metadata do job ────────────────────────────────────
             _job_meta = job.metadata if isinstance(job.metadata, dict) else {}
             if isinstance(job.metadata, str):
                 import json as _jm
@@ -100,12 +97,27 @@ class SynthesisAgent:
             _sub_style = str(_job_meta.get("subtitle_style") or "cinema")
             _sub_anim = str(_job_meta.get("subtitle_animation") or "frases")
 
-            if manifest._data.get("watermark_removed"):
+            # ── Decide se aplica blur manual ─────────────────────────
+            # Regra: blur só é aplicado quando o usuário NÃO pediu remoção de
+            # marca d'água. Se pediu (remove_watermark=True), a API já tratou
+            # (ou o compositor do DreamFace vai compor por cima), então NÃO bluramos.
+            #
+            # Condições para PULAR o blur:
+            # 1. Remoção foi bem-sucedida (manifest flag watermark_removed=True), OU
+            # 2. Usuário pediu remoção (job metadata remove_watermark=True) — mesmo
+            #    que a API tenha falhado, o usuário não quer blur manual.
+            _wm_requested = bool(_job_meta.get("remove_watermark"))
+            _wm_removed_ok = bool(manifest._data.get("watermark_removed"))
+
+            if _wm_removed_ok or _wm_requested:
                 sub_blur_region = None
                 logger.info(
                     "synthesis.skip_blur",
-                    reason="watermark_removed" if manifest._data.get("watermark_removed") else "user_requested",
+                    reason="watermark_removed_by_api" if _wm_removed_ok else "user_requested_no_blur",
+                    remove_watermark_flag=_wm_requested,
                 )
+
+
 
             # Set up output directory
             output_dir = self.workspace_dir / "outputs" / job_id
