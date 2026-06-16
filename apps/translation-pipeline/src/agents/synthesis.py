@@ -210,28 +210,26 @@ class SynthesisAgent:
 
             # ── Start DreamFace in PARALLEL ⚡ ─────────────────────────
             # DreamFace takes ~60s. Start it NOW while we render the video.
+            # IMPORTANTE: Sempre usar file upload (avatar_url=None, audio_url=None).
+            # O modo URL falha silenciosamente: os servidores DreamFace (cloud externo)
+            # não conseguem alcançar URLs do Railway por restrições de rede.
             dreamface_task = None
             if lipsync_agent and avatar_file:
-                _synth_progress(86, "🎭 Enviando áudio ao DreamFace (paralelo)...")
-                # URL pública (Railway): DreamFace baixa avatar+áudio direto,
-                # SEM o upload que falha. Mesmo padrão da marca d'água.
-                _base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
-                if not _base and os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
-                    _base = "https://" + os.environ["RAILWAY_PUBLIC_DOMAIN"]
-                _avatar_url = f"{_base}/api/translate/characters/{character_id}/avatar" if _base else None
-                _audio_url = f"{_base}/api/translate/lipsync-audio/{job_id}" if _base else None
+                _synth_progress(86, "🎭 Enviando arquivos ao DreamFace (upload direto)...")
                 logger.info(
                     "synthesis.lipsync_start_parallel",
                     job_id=job_id, character_id=character_id,
-                    via="url" if _avatar_url else "upload", base=_base or "(none)",
+                    via="file_upload",
+                    avatar=str(avatar_file),
+                    audio=str(audio_path),
                 )
                 dreamface_task = asyncio.create_task(
                     lipsync_agent.process(
                         job_id=job_id,
                         audio_path=Path(audio_path),
                         avatar_video_path=avatar_file,
-                        avatar_url=_avatar_url,
-                        audio_url=_audio_url,
+                        avatar_url=None,   # Forçar file upload — URLs externas não funcionam
+                        audio_url=None,    # Forçar file upload — URLs externas não funcionam
                         progress_callback=lambda phase, pct, msg: _synth_progress(
                             86 + pct * 0.04, f"🎭 {msg}"
                         ),
@@ -467,12 +465,14 @@ class SynthesisAgent:
                         final_path = await _fallback_burn(final_path)
 
                 except Exception as ls_err:
+                    _err_short = str(ls_err)[:120]
                     logger.warning(
                         "synthesis.lipsync_failed",
                         error=str(ls_err),
+                        error_type=type(ls_err).__name__,
                         msg="Video saved without lip sync overlay",
                     )
-                    _synth_progress(97, "⚠️ Avatar falhou — queimando legendas no vídeo...")
+                    _synth_progress(97, f"⚠️ Avatar falhou ({type(ls_err).__name__}: {_err_short}) — queimando legendas...")
                     final_path = await _fallback_burn(final_path)
 
             # Get final video stats

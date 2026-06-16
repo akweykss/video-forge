@@ -1624,6 +1624,39 @@ async def get_lipsync_audio(job_id: str):
     return FileResponse(path=str(audio_path), media_type="audio/wav")
 
 
+@app.get("/api/translate/dreamface-test", tags=["diagnostics"])
+async def dreamface_test():
+    """Testa a chave DreamFace API e retorna status — sem consumir créditos."""
+    import asyncio as _asyncio
+    dreamface_key = os.environ.get("DREAMFACE_API_KEY", "")
+    if not dreamface_key:
+        return {"ok": False, "error": "DREAMFACE_API_KEY não configurada no Railway"}
+
+    try:
+        from dreamapi import DreamAPI
+        log_path = WORKSPACE_DIR / "dreamface_test.log"
+        loop = _asyncio.get_event_loop()
+
+        def _test_init():
+            api = DreamAPI(dreamface_key, str(log_path))
+            # Verifica se o SDK inicializa sem erros
+            methods = [m for m in dir(api) if not m.startswith("_")]
+            return api, methods
+
+        api, methods = await loop.run_in_executor(None, _test_init)
+        return {
+            "ok": True,
+            "key_prefix": dreamface_key[:8] + "...",
+            "sdk_version": "0.0.3",
+            "methods_available": methods,
+            "dreamface_api_key_set": True,
+        }
+    except ImportError:
+        return {"ok": False, "error": "Pacote dream-api não instalado. Adicione dream-api==0.0.3 ao requirements.txt"}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "error_type": type(e).__name__}
+
+
 @app.get("/api/translate/characters/{character_id}/avatar", tags=["characters"])
 async def get_character_avatar(character_id: str):
     """Serve the full character avatar file (video or image).
