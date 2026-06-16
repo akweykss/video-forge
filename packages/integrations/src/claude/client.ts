@@ -169,8 +169,8 @@ const ImageValidationSchema = z.object({
 // Cliente
 // ============================================================
 
-/** Modelo padrão do Claude para análise */
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+/** Modelo padrão do Claude para análise (atualizado: claude-sonnet-4-20250514 descontinuado) */
+const CLAUDE_MODEL = 'claude-sonnet-4-5';
 
 /** Instância singleton do cliente Anthropic */
 let clientInstance: Anthropic | null = null;

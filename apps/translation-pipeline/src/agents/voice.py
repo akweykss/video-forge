@@ -856,7 +856,7 @@ Respond with this exact JSON structure:
 }}"""
 
         response = await client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5",  # Atualizado: claude-sonnet-4-20250514 foi descontinuado
             max_tokens=8192,
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
