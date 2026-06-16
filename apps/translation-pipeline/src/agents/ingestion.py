@@ -110,17 +110,33 @@ class IngestionAgent:
                 if not dreamface_key:
                     logger.warning("ingestion.watermark.no_api_key")
                 else:
-                    # Use CDN URL if captured, otherwise skip (file can't be served)
+                    # Preferência: CDN URL capturada do api.douyin.wtf (alta qualidade)
                     cdn_url = self._cdn_video_url
+
+                    # Fallback: se api.douyin.wtf falhou, usamos nosso próprio servidor
+                    # para servir o vídeo baixado localmente via yt-dlp.
+                    # O endpoint /api/translate/serve-source/{job_id} expõe o arquivo.
                     if not cdn_url:
-                        logger.warning(
-                            "ingestion.watermark.no_cdn_url",
-                            note="api.douyin.wtf failed — using yt-dlp fallback which downloads locally. Cannot pass local file to NewportAI. Skipping watermark removal.",
-                        )
-                    else:
+                        _base = _os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+                        if not _base and _os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
+                            _base = "https://" + _os.environ["RAILWAY_PUBLIC_DOMAIN"]
+                        if _base:
+                            cdn_url = f"{_base}/api/translate/serve-source/{job_id}"
+                            logger.info(
+                                "ingestion.watermark.self_hosted_url",
+                                url=cdn_url,
+                                note="api.douyin.wtf indisponível — servindo vídeo local como URL pública",
+                            )
+                        else:
+                            logger.warning(
+                                "ingestion.watermark.no_cdn_url",
+                                note="Sem CDN URL e sem RAILWAY_PUBLIC_DOMAIN — remoção de marca d'água pulada.",
+                            )
+                    if cdn_url:  # Executa para CDN URL (douyin.wtf) OU URL self-hosted (Railway)
                         try:
                             _progress(13, "🧹 Removendo marca d'água via NewportAI...")
                             remover = WatermarkRemover(api_key=dreamface_key)
+
 
                             def _wm_progress(pct, msg):
                                 _progress(pct, msg)

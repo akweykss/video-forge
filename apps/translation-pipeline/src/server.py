@@ -700,8 +700,9 @@ async def run_lipsync_only(job_id: str):
             _update_progress(job_id, "error", 0, "❌ DREAMFACE_API_KEY não configurada")
             return
 
-        # Find character avatar
-        char_dir = BASE_DIR / "data" / "characters" / character_id
+        # Find character avatar (uses volume-persisted CHARACTERS_DIR)
+        char_dir = CHARACTERS_DIR / character_id
+
         char_meta_path = char_dir / "meta.json"
         if not char_meta_path.exists():
             _update_progress(job_id, "error", 0, f"❌ Personagem {character_id} não encontrado")
@@ -1434,7 +1435,9 @@ import json as _json_module
 import aiofiles
 from fastapi import UploadFile, File, Form
 
-CHARACTERS_DIR = BASE_DIR / "data" / "characters"
+CHARACTERS_DIR = Path(_os_env.environ.get("FOLD_CHARACTERS_DIR", str(BASE_DIR / "data" / "characters")))
+CHARACTERS_DIR.mkdir(parents=True, exist_ok=True)  # garante que existe no volume
+
 
 ALLOWED_CHARACTER_EXTENSIONS = {
     # Video files (avatar for lip sync)
@@ -1622,6 +1625,29 @@ async def get_lipsync_audio(job_id: str):
     if not audio_path.exists():
         raise HTTPException(status_code=404, detail="Audio not found")
     return FileResponse(path=str(audio_path), media_type="audio/wav")
+
+
+@app.get("/api/translate/serve-source/{job_id}", tags=["diagnostics"])
+async def serve_source_video(job_id: str):
+    """Serve o vídeo fonte baixado localmente como URL pública.
+
+    Usado pela NewportAI watermark remover quando a api.douyin.wtf está
+    indisponível e não há CDN URL. Permite passar o vídeo local como URL
+    acessível externamente para a API de remoção de marca d'água.
+    """
+    download_dir = WORKSPACE_DIR / "downloads" / job_id
+    # Procura o arquivo fonte (vários nomes possíveis)
+    for candidate in ["source.mp4", "source_clean.mp4", "video.mp4"]:
+        p = download_dir / candidate
+        if p.exists():
+            return FileResponse(path=str(p), media_type="video/mp4",
+                                headers={"Content-Disposition": "inline"})
+    # Busca qualquer .mp4 no diretório
+    if download_dir.exists():
+        for f in download_dir.glob("*.mp4"):
+            return FileResponse(path=str(f), media_type="video/mp4",
+                                headers={"Content-Disposition": "inline"})
+    raise HTTPException(status_code=404, detail="Source video not found")
 
 
 @app.get("/api/translate/dreamface-test", tags=["diagnostics"])

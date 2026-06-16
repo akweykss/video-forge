@@ -175,7 +175,13 @@ class SynthesisAgent:
                 from ..agents.lipsync import LipSyncAgent
                 from ..agents.compositor import LayoutCompositor
 
-                char_dir = Path(__file__).parent.parent.parent / "data" / "characters" / character_id
+                # Usa o mesmo diretório configurado no server (volume persistente)
+                _chars_base = Path(os.environ.get(
+                    "FOLD_CHARACTERS_DIR",
+                    str(Path(__file__).parent.parent.parent / "data" / "characters")
+                ))
+                char_dir = _chars_base / character_id
+
                 char_meta_path = char_dir / "meta.json"
                 if char_meta_path.exists():
                     import json as _json_m
